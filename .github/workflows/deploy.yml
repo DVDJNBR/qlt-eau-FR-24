@@ -27,6 +27,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_IP }}
+          port: 5790
           username: ubuntu
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |

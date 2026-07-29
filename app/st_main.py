@@ -22,26 +22,29 @@ import urllib.request
 
 _GEOJSON_BASE = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master"
 
-# Départements métropole (avec géométrie)
-_DEPT_PATH = DATA_DIR / "departements.geojson"
-_dept_ok = False
-if _DEPT_PATH.exists():
-    _sample = json.loads(_DEPT_PATH.read_text(encoding="utf-8"))
-    _dept_ok = isinstance(_sample, dict) and "features" in _sample
-if not _dept_ok:
-    with urllib.request.urlopen(f"{_GEOJSON_BASE}/departements.geojson", timeout=30) as r:
-        _data = json.load(r)
-    with open(_DEPT_PATH, "w", encoding="utf-8") as f:
-        json.dump(_data, f, ensure_ascii=False)
+@st.cache_resource
+def _ensure_geojson_files():
+    """Télécharge les GeoJSON si absents/invalides. Exécuté une seule fois (cache_resource) au lieu de à chaque rerun."""
+    dept_path = DATA_DIR / "departements.geojson"
+    dept_ok = False
+    if dept_path.exists():
+        sample = json.loads(dept_path.read_text(encoding="utf-8"))
+        dept_ok = isinstance(sample, dict) and "features" in sample
+    if not dept_ok:
+        with urllib.request.urlopen(f"{_GEOJSON_BASE}/departements.geojson", timeout=30) as r:
+            data = json.load(r)
+        with open(dept_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
-# DOM-TOM
-_DOMTOM_PATH = DATA_DIR / "departements_domtom.geojson"
-if not _DOMTOM_PATH.exists():
-    with urllib.request.urlopen(f"{_GEOJSON_BASE}/departements-avec-outre-mer.geojson", timeout=30) as r:
-        _data = json.load(r)
-    _data["features"] = [f for f in _data["features"] if f["properties"]["code"] in {"971","972","973","974","976"}]
-    with open(_DOMTOM_PATH, "w", encoding="utf-8") as f:
-        json.dump(_data, f, ensure_ascii=False)
+    domtom_path = DATA_DIR / "departements_domtom.geojson"
+    if not domtom_path.exists():
+        with urllib.request.urlopen(f"{_GEOJSON_BASE}/departements-avec-outre-mer.geojson", timeout=30) as r:
+            data = json.load(r)
+        data["features"] = [f for f in data["features"] if f["properties"]["code"] in {"971","972","973","974","976"}]
+        with open(domtom_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+
+_ensure_geojson_files()
 
 MOIS_LABELS = {
     1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",

@@ -184,6 +184,15 @@ _CSS_COMMON = """
     /* Toggle thème : éviter le retour à la ligne du label */
     .st-key-dark_mode label p { white-space: nowrap !important; }
 """
+# Carte KPI "Conformité" (manomètre) : même habillage que les cartes colorées
+# (fond/bordure/coins arrondis) pour que les 5 blocs de la ligne KPI soient
+# visuellement découpés de façon cohérente, pas seulement 3 sur 5.
+_CSS_COMMON += f"""
+    .st-key-gauge_card {{
+        background: {_card_bg}; border: 1px solid {_card_border};
+        border-radius: 12px; padding: 10px 15px 0 15px;
+    }}
+"""
 
 if _dark:
     st.markdown(f"""
@@ -280,7 +289,7 @@ selected_month_label = st.session_state["selected_month_label"] or "Janvier"
 selected_month = next(k for k, v in MOIS_LABELS.items() if v == selected_month_label)
 
 # --- Header ---
-col_title, col_theme = st.columns([9, 1])
+col_title, col_theme = st.columns([7, 1])
 with col_title:
     scope_text = "France" if st.session_state.view_level == "National" else dept_names.get(st.session_state.selected_dept_code, "Département")
     kicker_color = "#5b6472" if _dark else "#94a3b8"
@@ -292,12 +301,14 @@ with col_title:
                         display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="3.5" y="18" width="17" height="3.2" rx="1.6" fill="#ffffff" opacity="0.85"/>
-                    <rect x="10.5" y="14" width="3" height="4.5" rx="1" fill="#ffffff"/>
-                    <circle cx="12" cy="9" r="5" stroke="#ffffff" stroke-width="2"/>
-                    <line x1="12" y1="4" x2="12" y2="14" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="7" y1="9" x2="17" y2="9" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="12" cy="9" r="1.6" fill="#ffffff"/>
+                    <rect x="2" y="14.5" width="20" height="5" rx="2.5" fill="#ffffff"/>
+                    <rect x="1" y="12.5" width="3.2" height="9" rx="1.2" fill="#ffffff"/>
+                    <rect x="19.8" y="12.5" width="3.2" height="9" rx="1.2" fill="#ffffff"/>
+                    <rect x="11" y="9.5" width="2" height="5.5" fill="#ffffff"/>
+                    <circle cx="12" cy="6.3" r="3.3" stroke="#ffffff" stroke-width="1.6"/>
+                    <line x1="12" y1="3.2" x2="12" y2="9.4" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+                    <line x1="8.7" y1="6.3" x2="15.3" y2="6.3" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+                    <circle cx="12" cy="6.3" r="1" fill="#ffffff"/>
                 </svg>
             </div>
             <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1;">
@@ -309,7 +320,113 @@ with col_title:
 
 with col_theme:
     st.markdown("<div style='margin-top:18px'></div>", unsafe_allow_html=True)
-    st.toggle("Mode sombre", key="dark_mode")
+    st.toggle("🌙", key="dark_mode", help="Mode sombre")
+
+st.divider()
+
+# ============================================================
+# PANNEAU INFOS : À propos / Circulation de la donnée / Architecture
+# ============================================================
+
+TECH_BADGES = [
+    ("Azure",      "#0078D4"),
+    ("Databricks", "#FF3621"),
+    ("Terraform",  "#7B42BC"),
+    ("Delta Lake", "#00A1F1"),
+    ("Python 3.13", "#3776AB"),
+    ("FastAPI",    "#009688"),
+    ("Streamlit",  "#FF4B4B"),
+    ("Hub'Eau API", "#3B82F6"),
+]
+
+tab_about, tab_flow, tab_infra = st.tabs(["À propos", "Circulation de la donnée", "Architecture cloud & BDD"])
+
+with tab_about:
+    st.markdown(_md_html(f"""
+        <p style="font-size:1.05rem; line-height:1.6; color:{PLOTLY_FONT_COLOR};">
+            Projet d'apprentissage data engineering pour se familiariser avec Azure Databricks,
+            Delta Lake et l'écosystème Azure (ADLS Gen2, Terraform). Le pipeline ingère les
+            données publiques de qualité de l'eau potable en France depuis
+            l'<a href="https://hubeau.eaufrance.fr/page/api-qualite-eau-potable" target="_blank" style="color:#60A5FA;">API Hub'Eau</a>,
+            les transforme selon une architecture Medallion <b>Bronze → Silver → Gold</b>,
+            et les expose via une API REST FastAPI sans compute Databricks.
+        </p>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+            {"".join(f'<span style="background:{color}22; color:{color}; border:1px solid {color}55; padding:5px 12px; border-radius:999px; font-size:0.8rem; font-weight:600;">{name}</span>' for name, color in TECH_BADGES)}
+        </div>
+        <p style="margin-top:16px;">
+            <a href="https://github.com/DVDJNBR/qlt-eau-FR-24" target="_blank" style="color:#60A5FA; font-size:0.9rem;">→ Code source sur GitHub</a>
+        </p>
+    """), unsafe_allow_html=True)
+
+with tab_flow:
+    PIPELINE_STEPS = [
+        ("Hub'Eau API", "Source", "#3B82F6"),
+        ("01 · Ingestion", "Bronze", "#cd7f32"),
+        ("02 · Transformation", "Silver", "#c0c0c0"),
+        ("03 · Agrégations", "Gold", "#ffd700"),
+        ("04 · Quality Checks", "Contrôles", "#4caf50"),
+        ("API REST", "Exposition", "#3B82F6"),
+    ]
+    _steps_html = ""
+    for i, (title, subtitle, color) in enumerate(PIPELINE_STEPS):
+        _steps_html += f"""
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:110px;">
+                <div style="width:100%; padding:14px 10px; border-radius:12px; background:{color}22; border:2px solid {color}; text-align:center;">
+                    <div style="font-weight:700; font-size:0.85rem; color:{PLOTLY_FONT_COLOR};">{title}</div>
+                    <div style="font-size:0.72rem; color:{_muted}; margin-top:2px;">{subtitle}</div>
+                </div>
+            </div>
+        """
+        if i < len(PIPELINE_STEPS) - 1:
+            _steps_html += f'<div style="font-size:1.4rem; color:{_muted}; padding:0 4px;">→</div>'
+
+    st.markdown(_md_html(f"""
+        <div style="display:flex; align-items:center; overflow-x:auto; padding:16px 4px; gap:2px;">
+            {_steps_html}
+        </div>
+        <p style="color:{_muted}; font-size:0.85rem; margin-top:8px;">
+            Ingestion incrémentale depuis Hub'Eau → nettoyage/standardisation Silver →
+            star schema + KPIs Gold → contrôles qualité Spark natif → exposition REST
+            directe depuis ADLS (sans compute Databricks au moment de la lecture).
+        </p>
+    """), unsafe_allow_html=True)
+
+with tab_infra:
+    AZURE_SERVICES = [
+        ("Azure Data Lake Storage Gen2", "Stockage Delta Lake (Bronze/Silver/Gold), partitionné par année/département."),
+        ("Azure Databricks", "Notebooks Spark pour l'ingestion, la transformation et les contrôles qualité."),
+        ("Terraform", "Infrastructure as Code — provisionnement ADLS Gen2 + workspace Databricks."),
+        ("Delta Lake", "Format de table transactionnel (ACID) sous-jacent à toutes les couches."),
+    ]
+    col_infra = st.columns(2)
+    for i, (name, desc) in enumerate(AZURE_SERVICES):
+        with col_infra[i % 2]:
+            st.markdown(_md_html(f"""
+                <div style="background:{_card_bg}; border:1px solid {_card_border}; border-radius:12px; padding:14px; margin-bottom:12px;">
+                    <div style="font-weight:700; color:{PLOTLY_FONT_COLOR}; margin-bottom:4px;">{name}</div>
+                    <div style="font-size:0.82rem; color:{_muted};">{desc}</div>
+                </div>
+            """), unsafe_allow_html=True)
+
+    st.markdown(f"<p style='font-weight:700; color:{PLOTLY_FONT_COLOR}; margin-top:8px;'>Schéma Gold (star schema)</p>", unsafe_allow_html=True)
+    GOLD_TABLES = [
+        ("dim_communes", "Dimension", "commune_code, commune_name, department_code"),
+        ("dim_parametres", "Dimension", "parameter_code, parameter_name, unit"),
+        ("dim_temps", "Dimension", "date_key, sampling_date, year, month, quarter"),
+        ("factmesuresqualite", "Fait", "sampling_id, commune_code FK, parameter_code FK, date_key FK, numeric_result"),
+        ("factconformite", "Fait", "sampling_id, parameter_code FK, date_key FK, is_compliant_pc, is_compliant_bact"),
+        ("agg_conformite_departement", "Agrégat", "department_code, total_tests, compliant_tests, compliance_rate"),
+    ]
+    for name, kind, cols in GOLD_TABLES:
+        _kind_color = {"Dimension": "#60A5FA", "Fait": "#f97316", "Agrégat": "#32ff7e"}[kind]
+        st.markdown(_md_html(f"""
+            <div style="display:flex; align-items:baseline; gap:10px; padding:8px 0; border-bottom:1px solid {_card_border};">
+                <span style="background:{_kind_color}22; color:{_kind_color}; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:700; white-space:nowrap;">{kind}</span>
+                <span style="font-weight:600; color:{PLOTLY_FONT_COLOR}; white-space:nowrap;">{name}</span>
+                <span style="font-size:0.78rem; color:{_muted}; font-family:monospace;">{cols}</span>
+            </div>
+        """), unsafe_allow_html=True)
 
 # --- Données du mois courant ---
 dept_code = st.session_state.selected_dept_code
@@ -331,13 +448,20 @@ nb_vigilance = len(df_m[(df_m["compliance_rate"] >= 80) & (df_m["compliance_rate
 nb_alerte    = len(df_m[df_m["compliance_rate"] < 80])
 
 c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("Zones", f"{nb_zones}")
+with c1:
+    st.markdown(f"""
+        <div style="background:{_card_bg};border:1px solid {_card_border};padding:15px;border-radius:12px">
+            <div style="font-size:0.8rem;color:{_muted};margin-bottom:6px">Zones</div>
+            <div style="font-size:2rem;font-weight:700;color:{PLOTLY_FONT_COLOR};line-height:1">{nb_zones}</div>
+        </div>
+    """, unsafe_allow_html=True)
 with c2:
-    st.caption("Conformité")
-    st.plotly_chart(
-        make_gauge_fig(mean_rate),
-        use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
-    )
+    with st.container(key="gauge_card"):
+        st.caption("Conformité")
+        st.plotly_chart(
+            make_gauge_fig(mean_rate),
+            use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
+        )
 
 if _dark:
     KPI_CARDS = [
@@ -831,108 +955,3 @@ else:
             </div>
         """), unsafe_allow_html=True)
 
-st.divider()
-
-# ============================================================
-# PANNEAU INFOS : À propos / Circulation de la donnée / Architecture
-# ============================================================
-
-TECH_BADGES = [
-    ("Azure",      "#0078D4"),
-    ("Databricks", "#FF3621"),
-    ("Terraform",  "#7B42BC"),
-    ("Delta Lake", "#00A1F1"),
-    ("Python 3.13", "#3776AB"),
-    ("FastAPI",    "#009688"),
-    ("Streamlit",  "#FF4B4B"),
-    ("Hub'Eau API", "#3B82F6"),
-]
-
-tab_about, tab_flow, tab_infra = st.tabs(["À propos", "Circulation de la donnée", "Architecture cloud & BDD"])
-
-with tab_about:
-    st.markdown(_md_html(f"""
-        <p style="font-size:1.05rem; line-height:1.6; color:{PLOTLY_FONT_COLOR};">
-            Projet d'apprentissage data engineering pour se familiariser avec Azure Databricks,
-            Delta Lake et l'écosystème Azure (ADLS Gen2, Terraform). Le pipeline ingère les
-            données publiques de qualité de l'eau potable en France depuis
-            l'<a href="https://hubeau.eaufrance.fr/page/api-qualite-eau-potable" target="_blank" style="color:#60A5FA;">API Hub'Eau</a>,
-            les transforme selon une architecture Medallion <b>Bronze → Silver → Gold</b>,
-            et les expose via une API REST FastAPI sans compute Databricks.
-        </p>
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
-            {"".join(f'<span style="background:{color}22; color:{color}; border:1px solid {color}55; padding:5px 12px; border-radius:999px; font-size:0.8rem; font-weight:600;">{name}</span>' for name, color in TECH_BADGES)}
-        </div>
-        <p style="margin-top:16px;">
-            <a href="https://github.com/DVDJNBR/qlt-eau-FR-24" target="_blank" style="color:#60A5FA; font-size:0.9rem;">→ Code source sur GitHub</a>
-        </p>
-    """), unsafe_allow_html=True)
-
-with tab_flow:
-    PIPELINE_STEPS = [
-        ("Hub'Eau API", "Source", "#3B82F6"),
-        ("01 · Ingestion", "Bronze", "#cd7f32"),
-        ("02 · Transformation", "Silver", "#c0c0c0"),
-        ("03 · Agrégations", "Gold", "#ffd700"),
-        ("04 · Quality Checks", "Contrôles", "#4caf50"),
-        ("API REST", "Exposition", "#3B82F6"),
-    ]
-    _steps_html = ""
-    for i, (title, subtitle, color) in enumerate(PIPELINE_STEPS):
-        _steps_html += f"""
-            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:110px;">
-                <div style="width:100%; padding:14px 10px; border-radius:12px; background:{color}22; border:2px solid {color}; text-align:center;">
-                    <div style="font-weight:700; font-size:0.85rem; color:{PLOTLY_FONT_COLOR};">{title}</div>
-                    <div style="font-size:0.72rem; color:{_muted}; margin-top:2px;">{subtitle}</div>
-                </div>
-            </div>
-        """
-        if i < len(PIPELINE_STEPS) - 1:
-            _steps_html += f'<div style="font-size:1.4rem; color:{_muted}; padding:0 4px;">→</div>'
-
-    st.markdown(_md_html(f"""
-        <div style="display:flex; align-items:center; overflow-x:auto; padding:16px 4px; gap:2px;">
-            {_steps_html}
-        </div>
-        <p style="color:{_muted}; font-size:0.85rem; margin-top:8px;">
-            Ingestion incrémentale depuis Hub'Eau → nettoyage/standardisation Silver →
-            star schema + KPIs Gold → contrôles qualité Spark natif → exposition REST
-            directe depuis ADLS (sans compute Databricks au moment de la lecture).
-        </p>
-    """), unsafe_allow_html=True)
-
-with tab_infra:
-    AZURE_SERVICES = [
-        ("Azure Data Lake Storage Gen2", "Stockage Delta Lake (Bronze/Silver/Gold), partitionné par année/département."),
-        ("Azure Databricks", "Notebooks Spark pour l'ingestion, la transformation et les contrôles qualité."),
-        ("Terraform", "Infrastructure as Code — provisionnement ADLS Gen2 + workspace Databricks."),
-        ("Delta Lake", "Format de table transactionnel (ACID) sous-jacent à toutes les couches."),
-    ]
-    col_infra = st.columns(2)
-    for i, (name, desc) in enumerate(AZURE_SERVICES):
-        with col_infra[i % 2]:
-            st.markdown(_md_html(f"""
-                <div style="background:{_card_bg}; border:1px solid {_card_border}; border-radius:12px; padding:14px; margin-bottom:12px;">
-                    <div style="font-weight:700; color:{PLOTLY_FONT_COLOR}; margin-bottom:4px;">{name}</div>
-                    <div style="font-size:0.82rem; color:{_muted};">{desc}</div>
-                </div>
-            """), unsafe_allow_html=True)
-
-    st.markdown(f"<p style='font-weight:700; color:{PLOTLY_FONT_COLOR}; margin-top:8px;'>Schéma Gold (star schema)</p>", unsafe_allow_html=True)
-    GOLD_TABLES = [
-        ("dim_communes", "Dimension", "commune_code, commune_name, department_code"),
-        ("dim_parametres", "Dimension", "parameter_code, parameter_name, unit"),
-        ("dim_temps", "Dimension", "date_key, sampling_date, year, month, quarter"),
-        ("factmesuresqualite", "Fait", "sampling_id, commune_code FK, parameter_code FK, date_key FK, numeric_result"),
-        ("factconformite", "Fait", "sampling_id, parameter_code FK, date_key FK, is_compliant_pc, is_compliant_bact"),
-        ("agg_conformite_departement", "Agrégat", "department_code, total_tests, compliant_tests, compliance_rate"),
-    ]
-    for name, kind, cols in GOLD_TABLES:
-        _kind_color = {"Dimension": "#60A5FA", "Fait": "#f97316", "Agrégat": "#32ff7e"}[kind]
-        st.markdown(_md_html(f"""
-            <div style="display:flex; align-items:baseline; gap:10px; padding:8px 0; border-bottom:1px solid {_card_border};">
-                <span style="background:{_kind_color}22; color:{_kind_color}; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:700; white-space:nowrap;">{kind}</span>
-                <span style="font-weight:600; color:{PLOTLY_FONT_COLOR}; white-space:nowrap;">{name}</span>
-                <span style="font-size:0.78rem; color:{_muted}; font-family:monospace;">{cols}</span>
-            </div>
-        """), unsafe_allow_html=True)

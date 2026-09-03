@@ -301,14 +301,11 @@ with col_title:
                         display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="14.5" width="20" height="5" rx="2.5" fill="#ffffff"/>
-                    <rect x="1" y="12.5" width="3.2" height="9" rx="1.2" fill="#ffffff"/>
-                    <rect x="19.8" y="12.5" width="3.2" height="9" rx="1.2" fill="#ffffff"/>
-                    <rect x="11" y="9.5" width="2" height="5.5" fill="#ffffff"/>
-                    <circle cx="12" cy="6.3" r="3.3" stroke="#ffffff" stroke-width="1.6"/>
-                    <line x1="12" y1="3.2" x2="12" y2="9.4" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
-                    <line x1="8.7" y1="6.3" x2="15.3" y2="6.3" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
-                    <circle cx="12" cy="6.3" r="1" fill="#ffffff"/>
+                    <rect x="2" y="6" width="20" height="5" rx="2.5" fill="#ffffff"/>
+                    <rect x="1" y="4.5" width="3.2" height="8" rx="1.2" fill="#ffffff"/>
+                    <rect x="19.8" y="4.5" width="3.2" height="8" rx="1.2" fill="#ffffff"/>
+                    <path d="M12 12.5C12 12.5 8.8 16.8 8.8 19.1C8.8 21 10.2 22.5 12 22.5C13.8 22.5 15.2 21 15.2 19.1C15.2 16.8 12 12.5 12 12.5Z" fill="#ffffff"/>
+                    <path d="M10.4 19.6C10.4 18.5 11 17.7 11.8 17.7" stroke="#60A5FA" stroke-width="1" stroke-linecap="round"/>
                 </svg>
             </div>
             <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1;">
@@ -339,7 +336,9 @@ TECH_BADGES = [
     ("Hub'Eau API", "#3B82F6"),
 ]
 
-tab_about, tab_flow, tab_infra = st.tabs(["À propos", "Circulation de la donnée", "Architecture cloud & BDD"])
+tab_dashboard, tab_about, tab_flow, tab_infra = st.tabs(
+    ["Dashboard", "À propos", "Circulation de la donnée", "Architecture cloud & BDD"]
+)
 
 with tab_about:
     st.markdown(_md_html(f"""
@@ -428,530 +427,531 @@ with tab_infra:
             </div>
         """), unsafe_allow_html=True)
 
-# --- Données du mois courant ---
-dept_code = st.session_state.selected_dept_code
-is_domtom = dept_code in DOMTOM_CODES
+with tab_dashboard:
+    # --- Données du mois courant ---
+    dept_code = st.session_state.selected_dept_code
+    is_domtom = dept_code in DOMTOM_CODES
 
-if st.session_state.view_level == "National":
-    df_m = df_agg_dept[df_agg_dept["mois"] == selected_month]
-else:
-    df_m = df_agg_commune[
-        (df_agg_commune["mois"] == selected_month) &
-        (df_agg_commune["code_departement"] == dept_code)
-    ]
+    if st.session_state.view_level == "National":
+        df_m = df_agg_dept[df_agg_dept["mois"] == selected_month]
+    else:
+        df_m = df_agg_commune[
+            (df_agg_commune["mois"] == selected_month) &
+            (df_agg_commune["code_departement"] == dept_code)
+        ]
 
-# --- KPIs : 2 métriques + 3 blocs colorés ---
-nb_zones    = len(df_m)
-mean_rate   = df_m["compliance_rate"].mean() if not df_m.empty else 0
-nb_conforme  = len(df_m[df_m["compliance_rate"] >= 95])
-nb_vigilance = len(df_m[(df_m["compliance_rate"] >= 80) & (df_m["compliance_rate"] < 95)])
-nb_alerte    = len(df_m[df_m["compliance_rate"] < 80])
+    # --- KPIs : 2 métriques + 3 blocs colorés ---
+    nb_zones    = len(df_m)
+    mean_rate   = df_m["compliance_rate"].mean() if not df_m.empty else 0
+    nb_conforme  = len(df_m[df_m["compliance_rate"] >= 95])
+    nb_vigilance = len(df_m[(df_m["compliance_rate"] >= 80) & (df_m["compliance_rate"] < 95)])
+    nb_alerte    = len(df_m[df_m["compliance_rate"] < 80])
 
-c1, c2, c3, c4, c5 = st.columns(5)
-with c1:
-    st.markdown(f"""
-        <div style="background:{_card_bg};border:1px solid {_card_border};padding:15px;border-radius:12px">
-            <div style="font-size:0.8rem;color:{_muted};margin-bottom:6px">Zones</div>
-            <div style="font-size:2rem;font-weight:700;color:{PLOTLY_FONT_COLOR};line-height:1">{nb_zones}</div>
-        </div>
-    """, unsafe_allow_html=True)
-with c2:
-    with st.container(key="gauge_card"):
-        st.caption("Conformité")
-        st.plotly_chart(
-            make_gauge_fig(mean_rate),
-            use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
-        )
-
-if _dark:
-    KPI_CARDS = [
-        (c3, "Conforme ≥95%",    nb_conforme,  "#0a1f14", "#1e4030", "#32ff7e", "#a0aec0"),
-        (c4, "Vigilance 80–95%", nb_vigilance, "#1a1500", "#3a3000", "#ffaf40", "#a0aec0"),
-        (c5, "Alerte &lt;80%",   nb_alerte,    "#1a0808", "#3a1515", "#ff4d4d", "#a0aec0"),
-    ]
-else:
-    KPI_CARDS = [
-        (c3, "Conforme ≥95%",    nb_conforme,  "#f0fff4", "#9ae6b4", "#276749", "#4a5568"),
-        (c4, "Vigilance 80–95%", nb_vigilance, "#fffaf0", "#fbd38d", "#c05621", "#4a5568"),
-        (c5, "Alerte &lt;80%",   nb_alerte,    "#fff5f5", "#fed7d7", "#c53030", "#4a5568"),
-    ]
-for col, label, count, bg, border, color, label_color in KPI_CARDS:
-    with col:
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1:
         st.markdown(f"""
-            <div style="background:{bg};border:1px solid {border};padding:15px;border-radius:12px">
-                <div style="font-size:0.8rem;color:{label_color};margin-bottom:6px">{label}</div>
-                <div style="font-size:2rem;font-weight:700;color:{color};line-height:1">{count}</div>
+            <div style="background:{_card_bg};border:1px solid {_card_border};padding:15px;border-radius:12px">
+                <div style="font-size:0.8rem;color:{_muted};margin-bottom:6px">Zones</div>
+                <div style="font-size:2rem;font-weight:700;color:{PLOTLY_FONT_COLOR};line-height:1">{nb_zones}</div>
             </div>
         """, unsafe_allow_html=True)
+    with c2:
+        with st.container(key="gauge_card"):
+            st.caption("Conformité")
+            st.plotly_chart(
+                make_gauge_fig(mean_rate),
+                use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
+            )
 
-# --- Recherche (sous les KPIs) ---
-st.markdown("<div style='margin-top:14px'></div>", unsafe_allow_html=True)
-st.caption("Rechercher par")
-sr_dept, sr_commune, sr_reset = st.columns([6, 6, 2])
+    if _dark:
+        KPI_CARDS = [
+            (c3, "Conforme ≥95%",    nb_conforme,  "#0a1f14", "#1e4030", "#32ff7e", "#a0aec0"),
+            (c4, "Vigilance 80–95%", nb_vigilance, "#1a1500", "#3a3000", "#ffaf40", "#a0aec0"),
+            (c5, "Alerte &lt;80%",   nb_alerte,    "#1a0808", "#3a1515", "#ff4d4d", "#a0aec0"),
+        ]
+    else:
+        KPI_CARDS = [
+            (c3, "Conforme ≥95%",    nb_conforme,  "#f0fff4", "#9ae6b4", "#276749", "#4a5568"),
+            (c4, "Vigilance 80–95%", nb_vigilance, "#fffaf0", "#fbd38d", "#c05621", "#4a5568"),
+            (c5, "Alerte &lt;80%",   nb_alerte,    "#fff5f5", "#fed7d7", "#c53030", "#4a5568"),
+        ]
+    for col, label, count, bg, border, color, label_color in KPI_CARDS:
+        with col:
+            st.markdown(f"""
+                <div style="background:{bg};border:1px solid {border};padding:15px;border-radius:12px">
+                    <div style="font-size:0.8rem;color:{label_color};margin-bottom:6px">{label}</div>
+                    <div style="font-size:2rem;font-weight:700;color:{color};line-height:1">{count}</div>
+                </div>
+            """, unsafe_allow_html=True)
 
-with sr_dept:
-    search_dept  = st.selectbox(
-        "Département",
-        options=list(dept_options.keys()),
-        format_func=lambda c: dept_options[c],
-        index=0,
-        placeholder="Rechercher un département…",
-        key="dept_search",
-    )
-    if search_dept and search_dept != st.session_state.get("selected_dept_code"):
-        st.session_state.selected_dept_code = search_dept
-        st.session_state.view_level = "Department"
-        st.rerun()
+    # --- Recherche (sous les KPIs) ---
+    st.markdown("<div style='margin-top:14px'></div>", unsafe_allow_html=True)
+    st.caption("Rechercher par")
+    sr_dept, sr_commune, sr_reset = st.columns([6, 6, 2])
 
-with sr_commune:
-    search_commune = st.selectbox(
-        "Commune",
-        options=[""] + sorted_communes,
-        index=0,
-        placeholder="Rechercher une commune…",
-        key="commune_search",
-    )
+    with sr_dept:
+        search_dept  = st.selectbox(
+            "Département",
+            options=list(dept_options.keys()),
+            format_func=lambda c: dept_options[c],
+            index=0,
+            placeholder="Rechercher un département…",
+            key="dept_search",
+        )
+        if search_dept and search_dept != st.session_state.get("selected_dept_code"):
+            st.session_state.selected_dept_code = search_dept
+            st.session_state.view_level = "Department"
+            st.rerun()
 
-with sr_reset:
-    st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
-    st.button(
-        "← Retour",
-        on_click=reset_view,
-        disabled=st.session_state.view_level != "Department",
-        use_container_width=True,
-    )
+    with sr_commune:
+        search_commune = st.selectbox(
+            "Commune",
+            options=[""] + sorted_communes,
+            index=0,
+            placeholder="Rechercher une commune…",
+            key="commune_search",
+        )
 
-st.divider()
+    with sr_reset:
+        st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
+        st.button(
+            "← Retour",
+            on_click=reset_view,
+            disabled=st.session_state.view_level != "Department",
+            use_container_width=True,
+        )
 
-# ============================================================
-# MOIS (empilés verticalement) + CARTE
-# ============================================================
+    st.divider()
 
-def coloraxis_config():
-    return dict(
-        colorscale=COLOR_SCALE, cmin=70, cmax=100,
-        colorbar=dict(
-            title=dict(text="%", font=dict(size=11)),
-            thickness=12, len=0.35, x=0.005, y=0.65, yanchor="middle",
-        ),
-    )
+    # ============================================================
+    # MOIS (empilés verticalement) + CARTE
+    # ============================================================
 
-def common_map_layout():
-    return dict(
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-        paper_bgcolor="rgba(0,0,0,0)",
-        clickmode="event+select",
-        showlegend=False,
-    )
+    def coloraxis_config():
+        return dict(
+            colorscale=COLOR_SCALE, cmin=70, cmax=100,
+            colorbar=dict(
+                title=dict(text="%", font=dict(size=11)),
+                thickness=12, len=0.35, x=0.005, y=0.65, yanchor="middle",
+            ),
+        )
 
-def geo_config(**overrides):
-    """Config geo commune : traces Choropleth pures (pas de mapbox/tuiles, donc pas
-    de clé API ni de dépendance à un fournisseur tiers). Fond transparent — hérite
-    de la couleur de la carte (.stPlotlyChart) posée en CSS, dark ou light."""
-    cfg = dict(
-        bgcolor="rgba(0,0,0,0)",
-        showland=False, showcountries=False, showframe=False,
-        showcoastlines=False, showsubunits=False, showocean=False, showlakes=False,
-        projection_type="mercator",
-        fitbounds="locations",
-    )
-    cfg.update(overrides)
-    return cfg
+    def common_map_layout():
+        return dict(
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},
+            paper_bgcolor="rgba(0,0,0,0)",
+            clickmode="event+select",
+            showlegend=False,
+        )
 
-@st.cache_resource
-def get_dept_commune_geo(dept: str):
-    """Sous-ensemble GeoJSON communes d'un département (35k features filtrées une seule fois)."""
-    features = [
-        f for f in geojson_commune_all["features"]
-        if f["properties"]["code"].startswith(dept)
-    ]
-    return {"type": "FeatureCollection", "features": features}
+    def geo_config(**overrides):
+        """Config geo commune : traces Choropleth pures (pas de mapbox/tuiles, donc pas
+        de clé API ni de dépendance à un fournisseur tiers). Fond transparent — hérite
+        de la couleur de la carte (.stPlotlyChart) posée en CSS, dark ou light."""
+        cfg = dict(
+            bgcolor="rgba(0,0,0,0)",
+            showland=False, showcountries=False, showframe=False,
+            showcoastlines=False, showsubunits=False, showocean=False, showlakes=False,
+            projection_type="mercator",
+            fitbounds="locations",
+        )
+        cfg.update(overrides)
+        return cfg
 
-col_months, col_map = st.columns([1.4, 8.6], gap="medium")
+    @st.cache_resource
+    def get_dept_commune_geo(dept: str):
+        """Sous-ensemble GeoJSON communes d'un département (35k features filtrées une seule fois)."""
+        features = [
+            f for f in geojson_commune_all["features"]
+            if f["properties"]["code"].startswith(dept)
+        ]
+        return {"type": "FeatureCollection", "features": features}
 
-with col_months:
-    st.pills(
-        "Mois", options=list(MOIS_LABELS.values()),
-        key="selected_month_label",
-        label_visibility="collapsed",
-    )
+    col_months, col_map = st.columns([1.4, 8.6], gap="medium")
 
-with col_map:
-    if st.session_state.view_level == "National":
-        # ── Carte nationale : métropole + 5 insets DOM-TOM ──────────────
-        fig = go.Figure()
+    with col_months:
+        st.pills(
+            "Mois", options=list(MOIS_LABELS.values()),
+            key="selected_month_label",
+            label_visibility="collapsed",
+        )
 
-        df_metro = df_m[~df_m["code_departement"].isin(DOMTOM_CODES)]
+    with col_map:
+        if st.session_state.view_level == "National":
+            # ── Carte nationale : métropole + 5 insets DOM-TOM ──────────────
+            fig = go.Figure()
 
-        fig.add_trace(go.Choropleth(
-            geojson=geojson_dept,
-            locations=df_metro["code_departement"],
-            z=df_metro["compliance_rate"],
-            featureidkey="properties.code",
-            coloraxis="coloraxis",
-            text=df_metro["nom_dept"],
-            hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
-            marker_opacity=0.8,
-            marker_line_width=0.5,
-            marker_line_color="#1e2530",
-            geo="geo",
-        ))
-
-        for i, (code, name, lat, lon, zoom, x_dom) in enumerate(DOM_TOM_CONFIG):
-            feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == code]
-            if not feat:
-                continue
-            geo_ft = {"type": "FeatureCollection", "features": feat}
-            df_t = df_m[df_m["code_departement"] == code]
-            locs  = df_t["code_departement"] if not df_t.empty else pd.Series(dtype=str)
-            zvals = df_t["compliance_rate"]   if not df_t.empty else pd.Series(dtype=float)
-            texts = [name] * len(df_t)        if not df_t.empty else []
+            df_metro = df_m[~df_m["code_departement"].isin(DOMTOM_CODES)]
 
             fig.add_trace(go.Choropleth(
-                geojson=geo_ft, locations=locs, z=zvals,
+                geojson=geojson_dept,
+                locations=df_metro["code_departement"],
+                z=df_metro["compliance_rate"],
                 featureidkey="properties.code",
                 coloraxis="coloraxis",
-                text=texts,
+                text=df_metro["nom_dept"],
                 hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
                 marker_opacity=0.8,
                 marker_line_width=0.5,
                 marker_line_color="#1e2530",
-                geo=f"geo{i+2}",
+                geo="geo",
             ))
-            fig.update_layout(**{f"geo{i+2}": geo_config(
-                domain={"x": x_dom, "y": [0.01, 0.22]},
-            )})
 
-        # Étiquettes des insets
-        label_x = [0.093, 0.293, 0.493, 0.693, 0.893]
-        for (code, name, *_), x_c in zip(DOM_TOM_CONFIG, label_x):
-            fig.add_annotation(
-                text=name, x=x_c, y=0.235,
-                xref="paper", yref="paper",
-                showarrow=False, font=dict(size=9, color="#718096"),
-                xanchor="center",
+            for i, (code, name, lat, lon, zoom, x_dom) in enumerate(DOM_TOM_CONFIG):
+                feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == code]
+                if not feat:
+                    continue
+                geo_ft = {"type": "FeatureCollection", "features": feat}
+                df_t = df_m[df_m["code_departement"] == code]
+                locs  = df_t["code_departement"] if not df_t.empty else pd.Series(dtype=str)
+                zvals = df_t["compliance_rate"]   if not df_t.empty else pd.Series(dtype=float)
+                texts = [name] * len(df_t)        if not df_t.empty else []
+
+                fig.add_trace(go.Choropleth(
+                    geojson=geo_ft, locations=locs, z=zvals,
+                    featureidkey="properties.code",
+                    coloraxis="coloraxis",
+                    text=texts,
+                    hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
+                    marker_opacity=0.8,
+                    marker_line_width=0.5,
+                    marker_line_color="#1e2530",
+                    geo=f"geo{i+2}",
+                ))
+                fig.update_layout(**{f"geo{i+2}": geo_config(
+                    domain={"x": x_dom, "y": [0.01, 0.22]},
+                )})
+
+            # Étiquettes des insets
+            label_x = [0.093, 0.293, 0.493, 0.693, 0.893]
+            for (code, name, *_), x_c in zip(DOM_TOM_CONFIG, label_x):
+                fig.add_annotation(
+                    text=name, x=x_c, y=0.235,
+                    xref="paper", yref="paper",
+                    showarrow=False, font=dict(size=9, color="#718096"),
+                    xanchor="center",
+                )
+
+            fig.update_layout(
+                **common_map_layout(),
+                geo=geo_config(domain={"x": [0, 1], "y": [0.25, 1.0]}),
+                coloraxis=coloraxis_config(),
+                height=680,
             )
 
-        fig.update_layout(
-            **common_map_layout(),
-            geo=geo_config(domain={"x": [0, 1], "y": [0.25, 1.0]}),
-            coloraxis=coloraxis_config(),
-            height=680,
-        )
+            event = st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="main_map")
 
-        event = st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="main_map")
+            if event:
+                points = event.get("selection", {}).get("points", [])
+                if points:
+                    clicked = points[0].get("location")
+                    if clicked:
+                        st.session_state.selected_dept_code = clicked
+                        st.session_state.view_level = "Department"
+                        st.rerun()
 
-        if event:
-            points = event.get("selection", {}).get("points", [])
-            if points:
-                clicked = points[0].get("location")
-                if clicked:
-                    st.session_state.selected_dept_code = clicked
-                    st.session_state.view_level = "Department"
-                    st.rerun()
+        elif is_domtom:
+            # ── Drill-down DOM-TOM : pas de GeoJSON communes → affichage département
+            feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == dept_code]
+            geo_ft = {"type": "FeatureCollection", "features": feat}
+            df_d = df_agg_dept[(df_agg_dept["mois"] == selected_month) &
+                               (df_agg_dept["code_departement"] == dept_code)]
 
-    elif is_domtom:
-        # ── Drill-down DOM-TOM : pas de GeoJSON communes → affichage département
-        feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == dept_code]
-        geo_ft = {"type": "FeatureCollection", "features": feat}
-        df_d = df_agg_dept[(df_agg_dept["mois"] == selected_month) &
-                           (df_agg_dept["code_departement"] == dept_code)]
+            fig = go.Figure(go.Choropleth(
+                geojson=geo_ft,
+                locations=df_d["code_departement"] if not df_d.empty else pd.Series(dtype=str),
+                z=df_d["compliance_rate"]           if not df_d.empty else pd.Series(dtype=float),
+                featureidkey="properties.code",
+                coloraxis="coloraxis",
+                text=df_d["nom_dept"] if not df_d.empty else [],
+                hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
+                marker_opacity=0.8,
+            ))
+            fig.update_layout(
+                **common_map_layout(),
+                geo=geo_config(),
+                coloraxis=coloraxis_config(),
+                height=580,
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key="dept_map")
+            st.caption("Données cartographiques communes non disponibles pour ce territoire — affichage au niveau départemental.")
 
-        fig = go.Figure(go.Choropleth(
-            geojson=geo_ft,
-            locations=df_d["code_departement"] if not df_d.empty else pd.Series(dtype=str),
-            z=df_d["compliance_rate"]           if not df_d.empty else pd.Series(dtype=float),
-            featureidkey="properties.code",
-            coloraxis="coloraxis",
-            text=df_d["nom_dept"] if not df_d.empty else [],
-            hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
-            marker_opacity=0.8,
-        ))
-        fig.update_layout(
-            **common_map_layout(),
-            geo=geo_config(),
-            coloraxis=coloraxis_config(),
-            height=580,
-        )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key="dept_map")
-        st.caption("Données cartographiques communes non disponibles pour ce territoire — affichage au niveau départemental.")
+        else:
+            # ── Drill-down département (métropole) : niveau commune ──────────
+            geo_local = get_dept_commune_geo(dept_code)
 
-    else:
-        # ── Drill-down département (métropole) : niveau commune ──────────
-        geo_local = get_dept_commune_geo(dept_code)
+            fig = go.Figure(go.Choropleth(
+                geojson=geo_local,
+                locations=df_m["code_commune"],
+                z=df_m["compliance_rate"],
+                featureidkey="properties.code",
+                coloraxis="coloraxis",
+                text=df_m["nom_commune"],
+                hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
+                marker_opacity=0.8,
+                marker_line_width=0.3,
+                marker_line_color="#1e2530",
+            ))
+            fig.update_layout(
+                **common_map_layout(),
+                geo=geo_config(),
+                coloraxis=coloraxis_config(),
+                height=580,
+            )
+            st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="dept_map")
 
-        fig = go.Figure(go.Choropleth(
-            geojson=geo_local,
-            locations=df_m["code_commune"],
-            z=df_m["compliance_rate"],
-            featureidkey="properties.code",
-            coloraxis="coloraxis",
-            text=df_m["nom_commune"],
-            hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
-            marker_opacity=0.8,
-            marker_line_width=0.3,
-            marker_line_color="#1e2530",
-        ))
-        fig.update_layout(
-            **common_map_layout(),
-            geo=geo_config(),
-            coloraxis=coloraxis_config(),
-            height=580,
-        )
-        st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="dept_map")
+    st.divider()
 
-st.divider()
+    # ============================================================
+    # PANNEAU BAS : Conformité temporelle + zoom commune
+    # ============================================================
 
-# ============================================================
-# PANNEAU BAS : Conformité temporelle + zoom commune
-# ============================================================
+    @st.cache_data
+    def build_conformity_trend(dept_code=None):
+        """Conformité mensuelle pondérée depuis df_agg_dept (national ou un département)."""
+        df = df_agg_dept[df_agg_dept["code_departement"] == dept_code] if dept_code else df_agg_dept
+        g = df.groupby("mois")[["compliant_tests", "total_tests"]].sum().reindex(range(1, 13))
+        rate = (g["compliant_tests"] / g["total_tests"] * 100).where(g["total_tests"] > 0)
+        return pd.DataFrame({
+            "mois": [MOIS_LABELS[m][:3] for m in range(1, 13)],
+            "Conformité": rate.to_numpy(),
+        })
 
-@st.cache_data
-def build_conformity_trend(dept_code=None):
-    """Conformité mensuelle pondérée depuis df_agg_dept (national ou un département)."""
-    df = df_agg_dept[df_agg_dept["code_departement"] == dept_code] if dept_code else df_agg_dept
-    g = df.groupby("mois")[["compliant_tests", "total_tests"]].sum().reindex(range(1, 13))
-    rate = (g["compliant_tests"] / g["total_tests"] * 100).where(g["total_tests"] > 0)
-    return pd.DataFrame({
-        "mois": [MOIS_LABELS[m][:3] for m in range(1, 13)],
-        "Conformité": rate.to_numpy(),
-    })
+    @st.cache_data
+    def build_commune_trend(commune_code):
+        """Conformité mensuelle d'une commune (None si aucune donnée)."""
+        df_c = df_agg_commune[df_agg_commune["code_commune"] == commune_code]
+        if df_c.empty:
+            return None
+        rate = df_c.set_index("mois")["compliance_rate"].reindex(range(1, 13))
+        return pd.DataFrame({
+            "mois": [MOIS_LABELS[m][:3] for m in range(1, 13)],
+            "Conformité": rate.to_numpy(),
+        })
 
-@st.cache_data
-def build_commune_trend(commune_code):
-    """Conformité mensuelle d'une commune (None si aucune donnée)."""
-    df_c = df_agg_commune[df_agg_commune["code_commune"] == commune_code]
-    if df_c.empty:
-        return None
-    rate = df_c.set_index("mois")["compliance_rate"].reindex(range(1, 13))
-    return pd.DataFrame({
-        "mois": [MOIS_LABELS[m][:3] for m in range(1, 13)],
-        "Conformité": rate.to_numpy(),
-    })
+    def make_conformity_fig(df_td, title, zone_label="Zone", df_commune_td=None, commune_label=None, emphasized=False):
+        """emphasized=True (zoom département) : ligne plus épaisse/saturée et courbe
+        lissée façon "flux d'eau", plutôt que le trait fin de la vue nationale."""
+        vals = df_td["Conformité"].dropna()
+        ymin = max(0, vals.min() - 5) if not vals.empty else 0
+        ymax = min(100, vals.max() + 2) if not vals.empty else 100
 
-def make_conformity_fig(df_td, title, zone_label="Zone", df_commune_td=None, commune_label=None, emphasized=False):
-    """emphasized=True (zoom département) : ligne plus épaisse/saturée et courbe
-    lissée façon "flux d'eau", plutôt que le trait fin de la vue nationale."""
-    vals = df_td["Conformité"].dropna()
-    ymin = max(0, vals.min() - 5) if not vals.empty else 0
-    ymax = min(100, vals.max() + 2) if not vals.empty else 100
-
-    if df_commune_td is not None:
-        c_vals = df_commune_td["Conformité"].dropna()
-        if not c_vals.empty:
-            ymin = min(ymin, max(0, c_vals.min() - 5))
-            ymax = max(ymax, min(100, c_vals.max() + 2))
-
-    line_color = "#3b82f6" if emphasized else "#60a5fa"
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=df_td["mois"], y=df_td["Conformité"],
-        name=zone_label,
-        mode="lines+markers",
-        line=dict(color=line_color, width=4 if emphasized else 2.5, shape="spline" if emphasized else "linear"),
-        marker=dict(size=7 if emphasized else 6, color=line_color),
-        fill="tozeroy", fillcolor="rgba(59,130,246,0.18)" if emphasized else "rgba(96,165,250,0.08)",
-        hovertemplate=f"{zone_label} — %{{x}} : %{{y:.1f}}%<extra></extra>",
-    ))
-
-    if df_commune_td is not None:
-        fig.add_trace(go.Scatter(
-            x=df_commune_td["mois"], y=df_commune_td["Conformité"],
-            name=commune_label,
-            mode="lines+markers",
-            line=dict(color="#f97316", width=2, dash="dot"),
-            marker=dict(size=6, color="#f97316"),
-            hovertemplate=f"{commune_label} — %{{x}} : %{{y:.1f}}%<extra></extra>",
-        ))
-
-    fig.update_layout(
-        template=PLOTLY_TEMPLATE, height=220,
-        title=dict(text=title, font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0, pad=dict(l=0)),
-        yaxis=dict(range=[ymin, ymax], title="%", ticksuffix="%", tickfont=dict(color=PLOTLY_FONT_COLOR)),
-        xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
-        showlegend=df_commune_td is not None,
-        legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
-        margin=dict(l=10, r=10, t=35, b=40 if df_commune_td is not None else 10),
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=PLOTLY_FONT_COLOR),
-    )
-    return fig
-
-# Scope de la vue courante
-if st.session_state.view_level == "Department" and dept_code:
-    trend_title  = dept_names.get(dept_code, dept_code)
-    trend_zone   = trend_title
-else:
-    trend_title = "France"
-    trend_zone  = "France"
-
-# Ligne conformité département / France
-dc    = dept_code if st.session_state.view_level == "Department" else None
-df_td = build_conformity_trend(dc)
-
-# Overlay commune si sélectionnée
-df_commune_td  = None
-commune_label  = None
-if search_commune:
-    _c_code = commune_name_to_code.get(search_commune)
-    if _c_code:
-        df_commune_td = build_commune_trend(_c_code)
         if df_commune_td is not None:
-            commune_label = search_commune
+            c_vals = df_commune_td["Conformité"].dropna()
+            if not c_vals.empty:
+                ymin = min(ymin, max(0, c_vals.min() - 5))
+                ymax = max(ymax, min(100, c_vals.max() + 2))
 
-st.plotly_chart(
-    make_conformity_fig(
-        df_td, f"Conformité 2024 — {trend_title}",
-        zone_label=trend_zone,
-        df_commune_td=df_commune_td,
-        commune_label=commune_label,
-        emphasized=(st.session_state.view_level == "Department"),
-    ),
-    use_container_width=True, config={"displayModeBar": False},
-)
-
-st.caption("Source : Hub'Eau API (2024). Cliquez sur un département pour zoomer.")
-
-st.divider()
-
-# ============================================================
-# PANNEAU PARAMÈTRES : niveaux réels de prélèvement
-# ============================================================
-
-PARAM_COLORS = {
-    "Nitrates":        "#f97316",
-    "Nitrites":        "#ef4444",
-    "Trihalométhanes": "#a855f7",
-    "Turbidité":       "#06b6d4",
-    "Fluorures":       "#84cc16",
-}
-BACT_COLORS = {
-    "E. coli":      "#f87171",
-    "Entérocoques": "#fb923c",
-}
-MOIS_SHORT = [MOIS_LABELS[m][:3] for m in range(1, 13)]
-
-
-def get_params_scope(df_dept, df_commune):
-    """Retourne (df_pct, df_bact) selon la vue courante."""
-    if search_commune:
-        commune_code = commune_name_to_code.get(search_commune)
-        if commune_code:
-            src = df_commune[df_commune["code_commune"] == commune_code]
-        else:
-            src = pd.DataFrame()
-    elif st.session_state.view_level == "Department" and dept_code:
-        src = df_dept[df_dept["code_departement"] == dept_code]
-    else:
-        # National : médiane des depts par mois × paramètre
-        if df_dept.empty:
-            return pd.DataFrame(), pd.DataFrame()
-        src = df_dept.groupby(
-            ["mois", "code_parametre", "nom_parametre", "type", "limite"]
-        ).agg(
-            valeur_mediane=("valeur_mediane", "median"),
-            pct_limite=("pct_limite", "median"),
-        ).reset_index()
-
-    if src.empty:
-        return pd.DataFrame(), pd.DataFrame()
-
-    df_pct  = src[src["type"] == "pct"]
-    df_bact = src[src["type"] == "count"]
-    return df_pct, df_bact
-
-
-def make_params_fig(df_pct, scope_label):
-    """Multi-lignes % de la limite légale pour les paramètres physico-chimiques."""
-    fig = go.Figure()
-
-    # Ligne de danger à 100%
-    fig.add_shape(
-        type="line", x0=-0.5, x1=11.5, y0=100, y1=100,
-        line=dict(color="#ff4d4d", width=1.5, dash="dash"),
-        xref="x", yref="y",
-    )
-    fig.add_annotation(
-        x=11, y=102, text="Limite légale", font=dict(size=9, color="#ff4d4d"),
-        showarrow=False, xref="x", yref="y",
-    )
-
-    for nom, color in PARAM_COLORS.items():
-        sub = df_pct[df_pct["nom_parametre"] == nom]
-        if sub.empty:
-            continue
-        y_vals = []
-        for m in range(1, 13):
-            row = sub[sub["mois"] == m]
-            y_vals.append(row["pct_limite"].values[0] if not row.empty else None)
-
+        line_color = "#3b82f6" if emphasized else "#60a5fa"
+        fig = go.Figure()
         fig.add_trace(go.Scatter(
-            x=MOIS_SHORT, y=y_vals,
-            name=nom,
+            x=df_td["mois"], y=df_td["Conformité"],
+            name=zone_label,
             mode="lines+markers",
-            line=dict(color=color, width=2),
-            marker=dict(size=5, color=color),
-            connectgaps=True,
-            hovertemplate=f"<b>{nom}</b><br>%{{x}} : %{{y:.1f}}% limite<extra></extra>",
+            line=dict(color=line_color, width=4 if emphasized else 2.5, shape="spline" if emphasized else "linear"),
+            marker=dict(size=7 if emphasized else 6, color=line_color),
+            fill="tozeroy", fillcolor="rgba(59,130,246,0.18)" if emphasized else "rgba(96,165,250,0.08)",
+            hovertemplate=f"{zone_label} — %{{x}} : %{{y:.1f}}%<extra></extra>",
         ))
 
-    fig.update_layout(
-        template=PLOTLY_TEMPLATE, height=260,
-        title=dict(
-            text=f"Niveaux physico-chimiques — {scope_label} (% de la limite légale)",
-            font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0,
+        if df_commune_td is not None:
+            fig.add_trace(go.Scatter(
+                x=df_commune_td["mois"], y=df_commune_td["Conformité"],
+                name=commune_label,
+                mode="lines+markers",
+                line=dict(color="#f97316", width=2, dash="dot"),
+                marker=dict(size=6, color="#f97316"),
+                hovertemplate=f"{commune_label} — %{{x}} : %{{y:.1f}}%<extra></extra>",
+            ))
+
+        fig.update_layout(
+            template=PLOTLY_TEMPLATE, height=220,
+            title=dict(text=title, font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0, pad=dict(l=0)),
+            yaxis=dict(range=[ymin, ymax], title="%", ticksuffix="%", tickfont=dict(color=PLOTLY_FONT_COLOR)),
+            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            showlegend=df_commune_td is not None,
+            legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            margin=dict(l=10, r=10, t=35, b=40 if df_commune_td is not None else 10),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color=PLOTLY_FONT_COLOR),
+        )
+        return fig
+
+    # Scope de la vue courante
+    if st.session_state.view_level == "Department" and dept_code:
+        trend_title  = dept_names.get(dept_code, dept_code)
+        trend_zone   = trend_title
+    else:
+        trend_title = "France"
+        trend_zone  = "France"
+
+    # Ligne conformité département / France
+    dc    = dept_code if st.session_state.view_level == "Department" else None
+    df_td = build_conformity_trend(dc)
+
+    # Overlay commune si sélectionnée
+    df_commune_td  = None
+    commune_label  = None
+    if search_commune:
+        _c_code = commune_name_to_code.get(search_commune)
+        if _c_code:
+            df_commune_td = build_commune_trend(_c_code)
+            if df_commune_td is not None:
+                commune_label = search_commune
+
+    st.plotly_chart(
+        make_conformity_fig(
+            df_td, f"Conformité 2024 — {trend_title}",
+            zone_label=trend_zone,
+            df_commune_td=df_commune_td,
+            commune_label=commune_label,
+            emphasized=(st.session_state.view_level == "Department"),
         ),
-        yaxis=dict(title="% limite", ticksuffix="%", rangemode="tozero", tickfont=dict(color=PLOTLY_FONT_COLOR)),
-        xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
-        legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
-        margin=dict(l=10, r=10, t=40, b=10),
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=PLOTLY_FONT_COLOR),
+        use_container_width=True, config={"displayModeBar": False},
     )
-    return fig
+
+    st.caption("Source : Hub'Eau API (2024). Cliquez sur un département pour zoomer.")
+
+    st.divider()
+
+    # ============================================================
+    # PANNEAU PARAMÈTRES : niveaux réels de prélèvement
+    # ============================================================
+
+    PARAM_COLORS = {
+        "Nitrates":        "#f97316",
+        "Nitrites":        "#ef4444",
+        "Trihalométhanes": "#a855f7",
+        "Turbidité":       "#06b6d4",
+        "Fluorures":       "#84cc16",
+    }
+    BACT_COLORS = {
+        "E. coli":      "#f87171",
+        "Entérocoques": "#fb923c",
+    }
+    MOIS_SHORT = [MOIS_LABELS[m][:3] for m in range(1, 13)]
 
 
-# Scope label
-if search_commune:
-    params_label = search_commune
-elif st.session_state.view_level == "Department" and dept_code:
-    params_label = dept_names.get(dept_code, dept_code)
-else:
-    params_label = "France"
-
-df_pct, df_bact = get_params_scope(df_params_dept, df_params_commune)
-
-if df_pct.empty and df_bact.empty:
-    st.info("Aucune donnée de paramètres disponible pour cette sélection.")
-else:
-    col_pct, col_bact = st.columns([3, 2])
-    with col_pct:
-        if not df_pct.empty:
-            st.plotly_chart(
-                make_params_fig(df_pct, params_label),
-                use_container_width=True, config={"displayModeBar": False},
-            )
-    with col_bact:
-        _has_detections = bool(not df_bact.empty and df_bact["valeur_mediane"].sum() > 0)
-        if _has_detections:
-            _bg, _border, _accent = ("#1a0808", "#3a1515", "#ff4d4d") if _dark else ("#fff5f5", "#fed7d7", "#c53030")
-            _total = int(df_bact["valeur_mediane"].sum())
-            _breakdown = " · ".join(
-                f"{nom} : {int(df_bact[df_bact['nom_parametre'] == nom]['valeur_mediane'].sum())}"
-                for nom in BACT_COLORS
-                if not df_bact[df_bact["nom_parametre"] == nom].empty
-            )
+    def get_params_scope(df_dept, df_commune):
+        """Retourne (df_pct, df_bact) selon la vue courante."""
+        if search_commune:
+            commune_code = commune_name_to_code.get(search_commune)
+            if commune_code:
+                src = df_commune[df_commune["code_commune"] == commune_code]
+            else:
+                src = pd.DataFrame()
+        elif st.session_state.view_level == "Department" and dept_code:
+            src = df_dept[df_dept["code_departement"] == dept_code]
         else:
-            _bg, _border, _accent = ("#0a1f14", "#1e4030", "#32ff7e") if _dark else ("#f0fff4", "#9ae6b4", "#276749")
-            _total, _breakdown = 0, "E. coli · Entérocoques — RAS"
+            # National : médiane des depts par mois × paramètre
+            if df_dept.empty:
+                return pd.DataFrame(), pd.DataFrame()
+            src = df_dept.groupby(
+                ["mois", "code_parametre", "nom_parametre", "type", "limite"]
+            ).agg(
+                valeur_mediane=("valeur_mediane", "median"),
+                pct_limite=("pct_limite", "median"),
+            ).reset_index()
 
-        st.markdown(_md_html(f"""
-            <div style="background:{_bg}; border:2px solid {_accent}; border-radius:12px; padding:20px;
-                        height:220px; display:flex; flex-direction:column; justify-content:center;
-                        align-items:center; text-align:center;">
-                <div style="font-size:0.85rem; color:{_muted}; margin-bottom:6px;">Détections bactériologiques — {params_label}</div>
-                <div style="font-size:2.6rem; font-weight:800; color:{_accent}; line-height:1;">{_total}</div>
-                <div style="font-size:0.8rem; color:{_accent}; margin-top:8px;">{_breakdown}</div>
-            </div>
-        """), unsafe_allow_html=True)
+        if src.empty:
+            return pd.DataFrame(), pd.DataFrame()
+
+        df_pct  = src[src["type"] == "pct"]
+        df_bact = src[src["type"] == "count"]
+        return df_pct, df_bact
+
+
+    def make_params_fig(df_pct, scope_label):
+        """Multi-lignes % de la limite légale pour les paramètres physico-chimiques."""
+        fig = go.Figure()
+
+        # Ligne de danger à 100%
+        fig.add_shape(
+            type="line", x0=-0.5, x1=11.5, y0=100, y1=100,
+            line=dict(color="#ff4d4d", width=1.5, dash="dash"),
+            xref="x", yref="y",
+        )
+        fig.add_annotation(
+            x=11, y=102, text="Limite légale", font=dict(size=9, color="#ff4d4d"),
+            showarrow=False, xref="x", yref="y",
+        )
+
+        for nom, color in PARAM_COLORS.items():
+            sub = df_pct[df_pct["nom_parametre"] == nom]
+            if sub.empty:
+                continue
+            y_vals = []
+            for m in range(1, 13):
+                row = sub[sub["mois"] == m]
+                y_vals.append(row["pct_limite"].values[0] if not row.empty else None)
+
+            fig.add_trace(go.Scatter(
+                x=MOIS_SHORT, y=y_vals,
+                name=nom,
+                mode="lines+markers",
+                line=dict(color=color, width=2),
+                marker=dict(size=5, color=color),
+                connectgaps=True,
+                hovertemplate=f"<b>{nom}</b><br>%{{x}} : %{{y:.1f}}% limite<extra></extra>",
+            ))
+
+        fig.update_layout(
+            template=PLOTLY_TEMPLATE, height=260,
+            title=dict(
+                text=f"Niveaux physico-chimiques — {scope_label} (% de la limite légale)",
+                font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0,
+            ),
+            yaxis=dict(title="% limite", ticksuffix="%", rangemode="tozero", tickfont=dict(color=PLOTLY_FONT_COLOR)),
+            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            margin=dict(l=10, r=10, t=40, b=10),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color=PLOTLY_FONT_COLOR),
+        )
+        return fig
+
+
+    # Scope label
+    if search_commune:
+        params_label = search_commune
+    elif st.session_state.view_level == "Department" and dept_code:
+        params_label = dept_names.get(dept_code, dept_code)
+    else:
+        params_label = "France"
+
+    df_pct, df_bact = get_params_scope(df_params_dept, df_params_commune)
+
+    if df_pct.empty and df_bact.empty:
+        st.info("Aucune donnée de paramètres disponible pour cette sélection.")
+    else:
+        col_pct, col_bact = st.columns([3, 2])
+        with col_pct:
+            if not df_pct.empty:
+                st.plotly_chart(
+                    make_params_fig(df_pct, params_label),
+                    use_container_width=True, config={"displayModeBar": False},
+                )
+        with col_bact:
+            _has_detections = bool(not df_bact.empty and df_bact["valeur_mediane"].sum() > 0)
+            if _has_detections:
+                _bg, _border, _accent = ("#1a0808", "#3a1515", "#ff4d4d") if _dark else ("#fff5f5", "#fed7d7", "#c53030")
+                _total = int(df_bact["valeur_mediane"].sum())
+                _breakdown = " · ".join(
+                    f"{nom} : {int(df_bact[df_bact['nom_parametre'] == nom]['valeur_mediane'].sum())}"
+                    for nom in BACT_COLORS
+                    if not df_bact[df_bact["nom_parametre"] == nom].empty
+                )
+            else:
+                _bg, _border, _accent = ("#0a1f14", "#1e4030", "#32ff7e") if _dark else ("#f0fff4", "#9ae6b4", "#276749")
+                _total, _breakdown = 0, "E. coli · Entérocoques — RAS"
+
+            st.markdown(_md_html(f"""
+                <div style="background:{_bg}; border:2px solid {_accent}; border-radius:12px; padding:20px;
+                            height:220px; display:flex; flex-direction:column; justify-content:center;
+                            align-items:center; text-align:center;">
+                    <div style="font-size:0.85rem; color:{_muted}; margin-bottom:6px;">Détections bactériologiques — {params_label}</div>
+                    <div style="font-size:2.6rem; font-weight:800; color:{_accent}; line-height:1;">{_total}</div>
+                    <div style="font-size:0.8rem; color:{_accent}; margin-top:8px;">{_breakdown}</div>
+                </div>
+            """), unsafe_allow_html=True)
 

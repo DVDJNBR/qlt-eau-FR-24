@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v1.6.0 (2026-09-03)
+
+### Features
+
+- **ui**: Onglet Dashboard par defaut + logo tuyau/goutte sans vanne
+  ([`36e2486`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/36e2486f1af743d91ce66514eeb24dbbefc6f626))
+
+- Logo : la vanne ne se lisait toujours pas clairement comme un tuyau selon le retour. Remplace par
+  un tuyau (corps + brides) surmonte d'une goutte d'eau qui en tombe, sans vanne du tout. - Le
+  contenu principal (KPIs, manometre, recherche, carte, tendances, parametres physico-chimiques,
+  statut bacteriologique) est deplace dans un 4e onglet "Dashboard", place en premier et donc actif
+  par defaut. Les onglets A propos / Circulation de la donnee / Architecture restent cliquables a
+  cote.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.5.1 (2026-09-03)
 
 ### Bug Fixes

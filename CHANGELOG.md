@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.4.0 (2026-09-03)
+
+### Features
+
+- **ui**: Logo vanne/robinet stylise a la place de la goutte
+  ([`944db3b`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/944db3b782cfab3d79016c0aa52545c9b131e5a9))
+
+Icone remplacee dans le badge du header : une roue de vanne (cercle + croix + moyeu) montee sur une
+  tige au-dessus d'une conduite, plutot qu'une goutte d'eau generique. Coherent avec le manometre de
+  conformite deja en place et avec l'esthetique tuyauterie des refs fournies (roues de vanne rouges,
+  manometres a cadran).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.3.0 (2026-09-03)
 
 ### Features

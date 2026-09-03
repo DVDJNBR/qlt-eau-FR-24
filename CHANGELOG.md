@@ -1,6 +1,32 @@
 # CHANGELOG
 
 
+## v1.7.0 (2026-09-03)
+
+### Features
+
+- **ui**: Logo dans le header natif Streamlit, onglet Dashboard en 4e position, cartes KPI alignees
+  ([`4c9f1d5`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/4c9f1d5ade86e4e6f817366d07e521da5525f1aa))
+
+- Logo dans st.logo() : place l'icone dans la barre d'en-tete native de Streamlit (au niveau du menu
+  de deploiement), verifie que la fonction existe et son comportement avant d'implementer (st.logo
+  n'accepte qu'une image statique, pas de HTML dynamique - le titre qui change selon le departement
+  reste donc dans le corps de page). Necessite de copier assets/ dans l'image Docker
+  (app/Dockerfile), absent avant. - Logo redessine une 3e fois : le tuyau a extremite fermee +
+  goutte au milieu se lisait comme une fuite. Nouvelle version : tuyau fixe a gauche, extremite
+  ouverte a droite (alesage visible), goutte qui tombe depuis cette ouverture - lecture "sortie
+  d'eau" plutot que "fissure sur un tuyau intact". - Onglets : Dashboard deplace en 4e et derniere
+  position, mais reste actif par defaut via le parametre `default=` de st.tabs (verifie present dans
+  la version Streamlit installee, 1.63.0). - Toggle dark mode : icone lune repositionnee a gauche du
+  switch (flex-direction: row-reverse sur le label du widget). - Cartes KPI : hauteur fixe (150px) +
+  centrage vertical sur les 5 blocs (Zones, manometre Conformite, Conforme/Vigilance/Alerte) pour
+  qu'ils soient tous alignes au lieu que le manometre depasse des 4 autres.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.6.0 (2026-09-03)
 
 ### Features

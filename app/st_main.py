@@ -212,15 +212,21 @@ _CSS_COMMON = """
         z-index: 1000001 !important; width: auto !important;
     }
     .st-key-dark_mode label > div:nth-of-type(1) {
-        background-color: #8b95a1 !important;
+        background-color: #c3c9d1 !important;
+    }
+    .st-key-dark_mode label:has(input:checked) > div:nth-of-type(1) {
+        background-color: #6b7280 !important;
+    }
+    .st-key-dark_mode::before, .st-key-dark_mode::after {
+        display: block !important; line-height: 0 !important; align-self: center !important;
     }
     .st-key-dark_mode::before {
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5' fill='%239aa4b2'/%3E%3Cg stroke='%239aa4b2' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.2' y1='4.2' x2='5.6' y2='5.6'/%3E%3Cline x1='18.4' y1='18.4' x2='19.8' y2='19.8'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.2' y1='19.8' x2='5.6' y2='18.4'/%3E%3Cline x1='18.4' y1='5.6' x2='19.8' y2='4.2'/%3E%3C/g%3E%3C/svg%3E");
-        margin-right: 6px; display: flex; align-items: center;
+        margin-right: 6px;
     }
     .st-key-dark_mode::after {
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath d='M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z' fill='%239aa4b2'/%3E%3C/svg%3E");
-        margin-left: 6px; display: flex; align-items: center;
+        margin-left: 6px;
     }
 """
 # Carte KPI "Conformité" (manomètre) : même habillage que les cartes colorées
@@ -232,6 +238,17 @@ _CSS_COMMON += f"""
         border-radius: 12px; padding: 10px 15px 0 15px;
         height: 150px; box-sizing: border-box;
         display: flex; flex-direction: column; justify-content: center;
+    }}
+    /* Onglets stylés : pilule sur l'onglet actif plutôt que texte nu +
+       simple soulignement. */
+    [data-baseweb="tab-list"] {{ gap: 4px !important; }}
+    [data-baseweb="tab"] {{
+        border-radius: 10px 10px 0 0 !important; padding: 8px 18px !important;
+        font-weight: 600 !important; gap: 6px !important;
+    }}
+    [data-baseweb="tab"]:hover {{ background: {_card_bg} !important; }}
+    [data-baseweb="tab"][aria-selected="true"] {{
+        background: {_card_bg} !important; border-bottom: none !important;
     }}
 """
 
@@ -376,8 +393,13 @@ TECH_BADGES = [
 ]
 
 tab_about, tab_flow, tab_infra, tab_dashboard = st.tabs(
-    ["À propos", "Circulation de la donnée", "Architecture cloud & BDD", "Dashboard"],
-    default="Dashboard",
+    [
+        ":material/info: À propos",
+        ":material/sync_alt: Circulation de la donnée",
+        ":material/cloud: Architecture cloud & BDD",
+        ":material/dashboard: Dashboard",
+    ],
+    default=":material/dashboard: Dashboard",
 )
 
 with tab_about:

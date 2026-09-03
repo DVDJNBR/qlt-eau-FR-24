@@ -66,11 +66,13 @@ DOM_TOM_CONFIG = [
 DOMTOM_CODES = {c[0] for c in DOM_TOM_CONFIG}
 
 # --- Chargement des données ---
-@st.cache_data
+# cache_resource (et non cache_data) : cache_data re-sérialise/copie la valeur à
+# chaque accès — prohibitif avec un GeoJSON communes de ~45 Mo. Les objets
+# retournés sont partagés et ne doivent jamais être mutés après chargement.
+@st.cache_resource
 def load_data():
     df_agg_commune = pd.read_parquet(DATA_DIR / "agg_commune_mois.parquet")
     df_agg_dept    = pd.read_parquet(DATA_DIR / "agg_dept_mois.parquet")
-    df_raw         = pd.read_parquet(DATA_DIR / "prelevements_2024.parquet")
 
     with open(DATA_DIR / "departements.geojson", encoding="utf-8") as f:
         geojson_dept = json.load(f)
@@ -90,18 +92,22 @@ def load_data():
     df_params_dept    = pd.read_parquet(DATA_DIR / "parametres_dept_mois.parquet")
     df_params_commune = pd.read_parquet(DATA_DIR / "parametres_commune_mois.parquet")
 
-    return (df_agg_commune, df_agg_dept, df_raw,
+    # Pré-calculs pour éviter de retrier ~35 000 noms à chaque rerun
+    commune_name_to_code = {v: k for k, v in commune_names.items()}
+    sorted_communes      = sorted(commune_names.values(), key=lambda x: x.lower())
+    dept_options         = {"": ""} | {code: nom for code, nom in sorted(dept_names.items(), key=lambda x: x[1])}
+
+    return (df_agg_commune, df_agg_dept,
             geojson_dept, geojson_commune_all, geojson_domtom,
-            dept_names, commune_names,
+            dept_names, commune_names, commune_name_to_code,
+            sorted_communes, dept_options,
             df_params_dept, df_params_commune)
 
-(df_agg_commune, df_agg_dept, df_raw,
+(df_agg_commune, df_agg_dept,
  geojson_dept, geojson_commune_all, geojson_domtom,
- dept_names, commune_names,
+ dept_names, commune_names, commune_name_to_code,
+ sorted_communes, dept_options,
  df_params_dept, df_params_commune) = load_data()
-
-# Mapping inverse nom → code commune (pour filtrer df_raw)
-commune_name_to_code = {v: k for k, v in commune_names.items()}
 
 # --- Session state ---
 if "view_level"           not in st.session_state: st.session_state.view_level           = "National"
@@ -113,15 +119,11 @@ if "dark_mode"            not in st.session_state: st.session_state.dark_mode   
 # Thème courant
 _dark            = st.session_state.get("dark_mode", False)
 PLOTLY_TEMPLATE  = "plotly_dark" if _dark else "plotly"
-# carto-* nécessite désormais une clé API : en clair on garde white-bg (aucune tuile,
-# aucune clé) ; en sombre on fournit un style Mapbox minimal (un calque "background"
-# sans aucune source) — même principe (pas de tuile chargée) mais couleur foncée.
-MAP_STYLE = (
-    {"version": 8, "sources": {}, "layers": [
-        {"id": "background", "type": "background", "paint": {"background-color": "#0b0d11"}}
-    ]}
-    if _dark else "white-bg"
-)
+# carto-* nécessite désormais une clé API. white-bg est le seul style Plotly
+# sans tuile qui ne nécessite pas de token Mapbox (un style JSON personnalisé,
+# même sans source, déclenche quand même l'exigence de token de mapbox-gl-js).
+# Le fond blanc en dark mode est atténué en CSS (carte encadrée) plus bas.
+MAP_STYLE = "white-bg"
 PLOTLY_FONT_COLOR = "#e2e8f0" if _dark else "#1a202c"
 
 # Injection CSS adaptative
@@ -130,11 +132,20 @@ PLOTLY_FONT_COLOR = "#e2e8f0" if _dark else "#1a202c"
 # l'état sélectionné via aria-checked.
 _CSS_COMMON = """
     /* Largeur max */
-    .block-container { max-width: 1200px !important; padding-left: 2rem !important; padding-right: 2rem !important; }
-    /* Centrer les Pills Streamlit */
-    div[data-testid="stButtonGroup"] { width: 100% !important; }
-    div[data-testid="stButtonGroup"] > div { display: flex !important; justify-content: center !important; flex-wrap: wrap !important; margin: 0 auto !important; gap: 6px !important; }
-    button[data-variant="pills"] { flex: 1 1 auto !important; justify-content: center !important; }
+    .block-container { max-width: 1400px !important; padding-left: 2rem !important; padding-right: 2rem !important; }
+    /* Sélecteur de mois : pills empilés verticalement à gauche de la carte */
+    .st-key-selected_month_label div[data-testid="stButtonGroup"] {
+        display: flex !important; flex-direction: column !important;
+        align-items: stretch !important; gap: 6px !important; width: 100% !important;
+    }
+    .st-key-selected_month_label div[data-testid="stButtonGroup"] > div {
+        display: flex !important; flex-direction: column !important; width: 100% !important;
+    }
+    .st-key-selected_month_label button[data-variant="pills"] {
+        width: 100% !important; justify-content: center !important;
+    }
+    /* Toggle thème : éviter le retour à la ligne du label */
+    .st-key-dark_mode label p { white-space: nowrap !important; }
 """
 
 if _dark:
@@ -178,6 +189,13 @@ if _dark:
         }}
         hr {{ border-color: #232a35 !important; }}
         label, p, h1, h2, h3, .stMarkdown, .stCaption {{ color: #e2e8f0 !important; }}
+        /* Carte encadrée : white-bg (seul style mapbox sans clé) reste blanc,
+           on l'entoure d'une bordure/coins arrondis sombres plutôt que de le
+           laisser bord-à-bord sur le fond noir de la page. */
+        [data-testid="stPlotlyChart"] {{
+            background: #151921; border: 1px solid #232a35; border-radius: 12px;
+            padding: 10px; overflow: hidden;
+        }}
         </style>
     """, unsafe_allow_html=True)
 else:
@@ -279,21 +297,12 @@ for col, label, count, bg, border, color, label_color in KPI_CARDS:
             </div>
         """, unsafe_allow_html=True)
 
-# --- Sélecteur de mois (pills, sous les KPIs) ---
+# --- Recherche (sous les KPIs) ---
 st.markdown("<div style='margin-top:14px'></div>", unsafe_allow_html=True)
-st.pills(
-    "Mois", options=list(MOIS_LABELS.values()),
-    key="selected_month_label",
-    label_visibility="collapsed",
-)
-
-# --- Recherche (sous les mois) ---
 st.caption("Rechercher par")
 sr_dept, sr_commune, sr_reset = st.columns([6, 6, 2])
 
 with sr_dept:
-    sorted_depts = sorted(dept_names.items(), key=lambda x: x[1])
-    dept_options = {"": ""} | {code: nom for code, nom in sorted_depts}
     search_dept  = st.selectbox(
         "Département",
         options=list(dept_options.keys()),
@@ -308,10 +317,9 @@ with sr_dept:
         st.rerun()
 
 with sr_commune:
-    all_communes   = sorted(commune_names.values(), key=lambda x: x.lower())
     search_commune = st.selectbox(
         "Commune",
-        options=[""] + all_communes,
+        options=[""] + sorted_communes,
         index=0,
         placeholder="Rechercher une commune…",
         key="commune_search",
@@ -329,7 +337,7 @@ with sr_reset:
 st.divider()
 
 # ============================================================
-# CARTE PLEINE LARGEUR
+# MOIS (empilés verticalement) + CARTE
 # ============================================================
 
 def coloraxis_config():
@@ -349,91 +357,120 @@ def common_mapbox_layout():
         showlegend=False,
     )
 
-if st.session_state.view_level == "National":
-    # ── Carte nationale : métropole + 5 insets DOM-TOM ──────────────────
-    fig = go.Figure()
-
-    df_metro = df_m[~df_m["code_departement"].isin(DOMTOM_CODES)]
-
-    fig.add_trace(go.Choroplethmapbox(
-        geojson=geojson_dept,
-        locations=df_metro["code_departement"],
-        z=df_metro["compliance_rate"],
-        featureidkey="properties.code",
-        coloraxis="coloraxis",
-        text=df_metro["nom_dept"],
-        hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
-        marker_opacity=0.8,
-        marker_line_width=0.5,
-        marker_line_color="#1e2530",
-        subplot="mapbox",
-    ))
-
-    for i, (code, name, lat, lon, zoom, x_dom) in enumerate(DOM_TOM_CONFIG):
-        feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == code]
-        if not feat:
+@st.cache_resource
+def get_dept_commune_geo(dept: str):
+    """Sous-ensemble GeoJSON + centroïde d'un département (35k features filtrées une seule fois)."""
+    features = [
+        f for f in geojson_commune_all["features"]
+        if f["properties"]["code"].startswith(dept)
+    ]
+    all_coords = []
+    for feat in features:
+        geom = feat["geometry"]
+        if geom is None:
             continue
-        geo  = {"type": "FeatureCollection", "features": feat}
-        df_t = df_m[df_m["code_departement"] == code]
-        locs  = df_t["code_departement"] if not df_t.empty else pd.Series(dtype=str)
-        zvals = df_t["compliance_rate"]   if not df_t.empty else pd.Series(dtype=float)
-        texts = [name] * len(df_t)        if not df_t.empty else []
+        if geom["type"] == "Polygon":
+            all_coords.extend(geom["coordinates"][0])
+        elif geom["type"] == "MultiPolygon":
+            for poly in geom["coordinates"]:
+                all_coords.extend(poly[0])
+    center_lon = sum(c[0] for c in all_coords) / len(all_coords) if all_coords else 2.5
+    center_lat = sum(c[1] for c in all_coords) / len(all_coords) if all_coords else 46.5
+    return {"type": "FeatureCollection", "features": features}, center_lat, center_lon
+
+col_months, col_map = st.columns([1.4, 8.6], gap="medium")
+
+with col_months:
+    st.pills(
+        "Mois", options=list(MOIS_LABELS.values()),
+        key="selected_month_label",
+        label_visibility="collapsed",
+    )
+
+with col_map:
+    if st.session_state.view_level == "National":
+        # ── Carte nationale : métropole + 5 insets DOM-TOM ──────────────
+        fig = go.Figure()
+
+        df_metro = df_m[~df_m["code_departement"].isin(DOMTOM_CODES)]
 
         fig.add_trace(go.Choroplethmapbox(
-            geojson=geo, locations=locs, z=zvals,
+            geojson=geojson_dept,
+            locations=df_metro["code_departement"],
+            z=df_metro["compliance_rate"],
             featureidkey="properties.code",
             coloraxis="coloraxis",
-            text=texts,
+            text=df_metro["nom_dept"],
             hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
             marker_opacity=0.8,
             marker_line_width=0.5,
             marker_line_color="#1e2530",
-            subplot=f"mapbox{i+2}",
+            subplot="mapbox",
         ))
-        fig.update_layout(**{f"mapbox{i+2}": dict(
-            style=MAP_STYLE,
-            center={"lat": lat, "lon": lon},
-            zoom=zoom,
-            domain={"x": x_dom, "y": [0.01, 0.22]},
-        )})
 
-    # Étiquettes des insets
-    label_x = [0.093, 0.293, 0.493, 0.693, 0.893]
-    for (code, name, *_), x_c in zip(DOM_TOM_CONFIG, label_x):
-        fig.add_annotation(
-            text=name, x=x_c, y=0.235,
-            xref="paper", yref="paper",
-            showarrow=False, font=dict(size=9, color="#718096"),
-            xanchor="center",
+        for i, (code, name, lat, lon, zoom, x_dom) in enumerate(DOM_TOM_CONFIG):
+            feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == code]
+            if not feat:
+                continue
+            geo  = {"type": "FeatureCollection", "features": feat}
+            df_t = df_m[df_m["code_departement"] == code]
+            locs  = df_t["code_departement"] if not df_t.empty else pd.Series(dtype=str)
+            zvals = df_t["compliance_rate"]   if not df_t.empty else pd.Series(dtype=float)
+            texts = [name] * len(df_t)        if not df_t.empty else []
+
+            fig.add_trace(go.Choroplethmapbox(
+                geojson=geo, locations=locs, z=zvals,
+                featureidkey="properties.code",
+                coloraxis="coloraxis",
+                text=texts,
+                hovertemplate="<b>%{text}</b><br>Conformité : %{z:.1f}%<extra></extra>",
+                marker_opacity=0.8,
+                marker_line_width=0.5,
+                marker_line_color="#1e2530",
+                subplot=f"mapbox{i+2}",
+            ))
+            fig.update_layout(**{f"mapbox{i+2}": dict(
+                style=MAP_STYLE,
+                center={"lat": lat, "lon": lon},
+                zoom=zoom,
+                domain={"x": x_dom, "y": [0.01, 0.22]},
+            )})
+
+        # Étiquettes des insets
+        label_x = [0.093, 0.293, 0.493, 0.693, 0.893]
+        for (code, name, *_), x_c in zip(DOM_TOM_CONFIG, label_x):
+            fig.add_annotation(
+                text=name, x=x_c, y=0.235,
+                xref="paper", yref="paper",
+                showarrow=False, font=dict(size=9, color="#718096"),
+                xanchor="center",
+            )
+
+        fig.update_layout(
+            **common_mapbox_layout(),
+            mapbox=dict(
+                style=MAP_STYLE,
+                center={"lat": 46.5, "lon": 2.5},
+                zoom=4.8, pitch=40,
+                domain={"x": [0, 1], "y": [0.25, 1.0]},
+            ),
+            coloraxis=coloraxis_config(),
+            height=680,
         )
 
-    fig.update_layout(
-        **common_mapbox_layout(),
-        mapbox=dict(
-            style=MAP_STYLE,
-            center={"lat": 46.5, "lon": 2.5},
-            zoom=4.8, pitch=40,
-            domain={"x": [0, 1], "y": [0.25, 1.0]},
-        ),
-        coloraxis=coloraxis_config(),
-        height=680,
-    )
+        event = st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="main_map")
 
-    event = st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="main_map")
+        if event:
+            points = event.get("selection", {}).get("points", [])
+            if points:
+                clicked = points[0].get("location")
+                if clicked:
+                    st.session_state.selected_dept_code = clicked
+                    st.session_state.view_level = "Department"
+                    st.rerun()
 
-    if event:
-        points = event.get("selection", {}).get("points", [])
-        if points:
-            clicked = points[0].get("location")
-            if clicked:
-                st.session_state.selected_dept_code = clicked
-                st.session_state.view_level = "Department"
-                st.rerun()
-
-else:
-    # ── Drill-down département ───────────────────────────────────────────
-    if is_domtom:
-        # Pas de GeoJSON communes pour DOM-TOM → affichage département
+    elif is_domtom:
+        # ── Drill-down DOM-TOM : pas de GeoJSON communes → affichage département
         dt_map = {c: (lat, lon, zoom) for c, _, lat, lon, zoom, _ in DOM_TOM_CONFIG}
         lat, lon, zoom = dt_map[dept_code]
         feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == dept_code]
@@ -461,25 +498,8 @@ else:
         st.caption("Données cartographiques communes non disponibles pour ce territoire — affichage au niveau départemental.")
 
     else:
-        # Métropole : commune-level
-        features = [
-            f for f in geojson_commune_all["features"]
-            if f["properties"]["code"].startswith(dept_code)
-        ]
-        geo_local = {"type": "FeatureCollection", "features": features}
-
-        all_coords = []
-        for feat in features:
-            geom = feat["geometry"]
-            if geom is None:
-                continue
-            if geom["type"] == "Polygon":
-                all_coords.extend(geom["coordinates"][0])
-            elif geom["type"] == "MultiPolygon":
-                for poly in geom["coordinates"]:
-                    all_coords.extend(poly[0])
-        center_lon = sum(c[0] for c in all_coords) / len(all_coords) if all_coords else 2.5
-        center_lat = sum(c[1] for c in all_coords) / len(all_coords) if all_coords else 46.5
+        # ── Drill-down département (métropole) : niveau commune ──────────
+        geo_local, center_lat, center_lon = get_dept_commune_geo(dept_code)
 
         fig = go.Figure(go.Choroplethmapbox(
             geojson=geo_local,
@@ -508,18 +528,28 @@ st.divider()
 # PANNEAU BAS : Conformité temporelle + zoom commune
 # ============================================================
 
-def build_conformity_trend(df_agg_src, dept_code=None):
-    """Conformité mensuelle pondérée depuis df_agg_dept ou df_agg_commune."""
-    df = df_agg_src[df_agg_src["code_departement"] == dept_code] if dept_code else df_agg_src
-    res = []
-    for m in range(1, 13):
-        df_mo = df[df["mois"] == m]
-        if df_mo.empty or df_mo["total_tests"].sum() == 0:
-            rate = None
-        else:
-            rate = df_mo["compliant_tests"].sum() / df_mo["total_tests"].sum() * 100
-        res.append({"mois": MOIS_LABELS[m][:3], "Conformité": rate})
-    return pd.DataFrame(res)
+@st.cache_data
+def build_conformity_trend(dept_code=None):
+    """Conformité mensuelle pondérée depuis df_agg_dept (national ou un département)."""
+    df = df_agg_dept[df_agg_dept["code_departement"] == dept_code] if dept_code else df_agg_dept
+    g = df.groupby("mois")[["compliant_tests", "total_tests"]].sum().reindex(range(1, 13))
+    rate = (g["compliant_tests"] / g["total_tests"] * 100).where(g["total_tests"] > 0)
+    return pd.DataFrame({
+        "mois": [MOIS_LABELS[m][:3] for m in range(1, 13)],
+        "Conformité": rate.to_numpy(),
+    })
+
+@st.cache_data
+def build_commune_trend(commune_code):
+    """Conformité mensuelle d'une commune (None si aucune donnée)."""
+    df_c = df_agg_commune[df_agg_commune["code_commune"] == commune_code]
+    if df_c.empty:
+        return None
+    rate = df_c.set_index("mois")["compliance_rate"].reindex(range(1, 13))
+    return pd.DataFrame({
+        "mois": [MOIS_LABELS[m][:3] for m in range(1, 13)],
+        "Conformité": rate.to_numpy(),
+    })
 
 def make_conformity_fig(df_td, title, zone_label="Zone", df_commune_td=None, commune_label=None):
     vals = df_td["Conformité"].dropna()
@@ -576,7 +606,7 @@ else:
 
 # Ligne conformité département / France
 dc    = dept_code if st.session_state.view_level == "Department" else None
-df_td = build_conformity_trend(df_agg_dept, dc)
+df_td = build_conformity_trend(dc)
 
 # Overlay commune si sélectionnée
 df_commune_td  = None
@@ -584,13 +614,8 @@ commune_label  = None
 if search_commune:
     _c_code = commune_name_to_code.get(search_commune)
     if _c_code:
-        _df_c = df_agg_commune[df_agg_commune["code_commune"] == _c_code]
-        if not _df_c.empty:
-            _res = []
-            for m in range(1, 13):
-                row = _df_c[_df_c["mois"] == m]
-                _res.append({"mois": MOIS_LABELS[m][:3], "Conformité": row["compliance_rate"].values[0] if not row.empty else None})
-            df_commune_td = pd.DataFrame(_res)
+        df_commune_td = build_commune_trend(_c_code)
+        if df_commune_td is not None:
             commune_label = search_commune
 
 st.plotly_chart(

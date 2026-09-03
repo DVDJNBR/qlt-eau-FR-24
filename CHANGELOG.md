@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v1.5.1 (2026-09-03)
+
+### Bug Fixes
+
+- **ui**: Logo tuyau lisible, toggle dark mode clair, cartes KPI uniformes, onglets sous le titre
+  ([`06889dc`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/06889dcf1e22d12bd0947e4a4f361dee64cc468a))
+
+- Logo : le badge affichait une vanne flottante, pas identifiable comme tuyau. Ajout d'un vrai
+  segment de tuyau (corps + brides aux deux extremites) avec la vanne montee dessus via une tige,
+  pour que la forme se lise immediatement comme "tuyau + vanne". - Toggle dark mode : le label "Mode
+  sombre" tronquait en "Mo..." dans une colonne etroite (surtout hors plein ecran). Remplace par une
+  icone lune seule (convention universelle, ne tronque jamais) avec un tooltip "Mode sombre" pour
+  l'accessibilite. Colonne elargie ([9,1] -> [7,1]) en complement. - Cartes KPI : "Zones" et le
+  manometre "Conformite" n'avaient pas le meme habillage (fond/bordure/coins arrondis) que les 3
+  cartes colorees (Conforme/Vigilance/Alerte), ce qui les faisait paraitre "fondues" dans la page
+  plutot que decoupees comme les autres. Meme traitement visuel applique aux 5 blocs de la ligne
+  KPI. - Page a onglets (A propos / Circulation de la donnee / Architecture) deplacee de la fin de
+  page jusqu'a directement sous le titre, comme demande.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.5.0 (2026-09-03)
 
 ### Features

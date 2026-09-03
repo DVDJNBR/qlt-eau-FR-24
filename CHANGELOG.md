@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v1.8.4 (2026-09-03)
+
+### Bug Fixes
+
+- **ui**: Toggle theme alignement/contraste + icones sur les onglets
+  ([`4617100`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/461710055d32e059d632fb2a6b7d6a4553a551c1))
+
+- Toggle dark mode : soleil/switch/lune alignes verticalement (align-self: center sur les
+  pseudo-elements), et le switch passe en gris plus fonce quand le mode sombre est active
+  (label:has(input: checked)) plutot qu'une seule teinte fixe. - Onglets : icone Material devant
+  chaque libelle (info / sync_alt / cloud / dashboard) + habillage pilule sur l'onglet actif et au
+  survol, plutot que texte nu + simple soulignement.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.8.3 (2026-09-03)
 
 ### Bug Fixes

@@ -18,7 +18,13 @@ def _md_html(s: str) -> str:
 
 # --- Configuration ---
 ASSETS_DIR = Path(__file__).parent.parent / "assets"
+APP_ASSETS_DIR = Path(__file__).parent / "assets"
 st.set_page_config(page_title="Qualité de l'eau en France 2024", layout="wide", page_icon=":material/water_drop:")
+
+# Logo dans la barre d'en-tête native de Streamlit (au niveau du menu ⋮).
+# st.logo() n'accepte qu'une image statique, pas de HTML dynamique : le titre
+# qui change selon le département sélectionné reste dans le corps de page.
+st.logo(str(APP_ASSETS_DIR / "logo-icon.svg"), size="large")
 
 # Le CSS dark/light est injecté plus bas après initialisation du session state
 
@@ -151,7 +157,7 @@ def make_gauge_fig(value):
         ),
     ))
     fig.update_layout(
-        height=110, margin=dict(l=15, r=15, t=5, b=0),
+        height=100, margin=dict(l=15, r=15, t=5, b=0),
         paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color=PLOTLY_FONT_COLOR),
     )
@@ -183,6 +189,8 @@ _CSS_COMMON = """
     }
     /* Toggle thème : éviter le retour à la ligne du label */
     .st-key-dark_mode label p { white-space: nowrap !important; }
+    /* Icône lune à gauche du switch plutôt qu'à droite */
+    .st-key-dark_mode label { flex-direction: row-reverse !important; justify-content: flex-end !important; gap: 8px !important; }
 """
 # Carte KPI "Conformité" (manomètre) : même habillage que les cartes colorées
 # (fond/bordure/coins arrondis) pour que les 5 blocs de la ligne KPI soient
@@ -191,6 +199,8 @@ _CSS_COMMON += f"""
     .st-key-gauge_card {{
         background: {_card_bg}; border: 1px solid {_card_border};
         border-radius: 12px; padding: 10px 15px 0 15px;
+        height: 150px; box-sizing: border-box;
+        display: flex; flex-direction: column; justify-content: center;
     }}
 """
 
@@ -301,11 +311,11 @@ with col_title:
                         display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="6" width="20" height="5" rx="2.5" fill="#ffffff"/>
-                    <rect x="1" y="4.5" width="3.2" height="8" rx="1.2" fill="#ffffff"/>
-                    <rect x="19.8" y="4.5" width="3.2" height="8" rx="1.2" fill="#ffffff"/>
-                    <path d="M12 12.5C12 12.5 8.8 16.8 8.8 19.1C8.8 21 10.2 22.5 12 22.5C13.8 22.5 15.2 21 15.2 19.1C15.2 16.8 12 12.5 12 12.5Z" fill="#ffffff"/>
-                    <path d="M10.4 19.6C10.4 18.5 11 17.7 11.8 17.7" stroke="#60A5FA" stroke-width="1" stroke-linecap="round"/>
+                    <rect x="1" y="5.5" width="3.2" height="8" rx="1.2" fill="#ffffff"/>
+                    <rect x="3" y="7" width="15" height="5" rx="2.5" fill="#ffffff"/>
+                    <ellipse cx="17" cy="9.5" rx="1.4" ry="2.3" fill="#2563EB"/>
+                    <path d="M17 11.5C17 11.5 14.3 15 14.3 17C14.3 18.6 15.5 19.8 17 19.8C18.5 19.8 19.7 18.6 19.7 17C19.7 15 17 11.5 17 11.5Z" fill="#ffffff"/>
+                    <path d="M15.6 17.4C15.6 16.5 16.1 15.8 16.8 15.8" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
                 </svg>
             </div>
             <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1;">
@@ -336,8 +346,9 @@ TECH_BADGES = [
     ("Hub'Eau API", "#3B82F6"),
 ]
 
-tab_dashboard, tab_about, tab_flow, tab_infra = st.tabs(
-    ["Dashboard", "À propos", "Circulation de la donnée", "Architecture cloud & BDD"]
+tab_about, tab_flow, tab_infra, tab_dashboard = st.tabs(
+    ["À propos", "Circulation de la donnée", "Architecture cloud & BDD", "Dashboard"],
+    default="Dashboard",
 )
 
 with tab_about:
@@ -450,7 +461,8 @@ with tab_dashboard:
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         st.markdown(f"""
-            <div style="background:{_card_bg};border:1px solid {_card_border};padding:15px;border-radius:12px">
+            <div style="background:{_card_bg};border:1px solid {_card_border};padding:15px;border-radius:12px;
+                        height:150px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center">
                 <div style="font-size:0.8rem;color:{_muted};margin-bottom:6px">Zones</div>
                 <div style="font-size:2rem;font-weight:700;color:{PLOTLY_FONT_COLOR};line-height:1">{nb_zones}</div>
             </div>
@@ -478,7 +490,8 @@ with tab_dashboard:
     for col, label, count, bg, border, color, label_color in KPI_CARDS:
         with col:
             st.markdown(f"""
-                <div style="background:{bg};border:1px solid {border};padding:15px;border-radius:12px">
+                <div style="background:{bg};border:1px solid {border};padding:15px;border-radius:12px;
+                            height:150px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center">
                     <div style="font-size:0.8rem;color:{label_color};margin-bottom:6px">{label}</div>
                     <div style="font-size:2rem;font-weight:700;color:{color};line-height:1">{count}</div>
                 </div>

@@ -127,6 +127,9 @@ if "dark_mode"            not in st.session_state: st.session_state.dark_mode   
 _dark            = st.session_state.get("dark_mode", False)
 PLOTLY_TEMPLATE  = "plotly_dark" if _dark else "plotly"
 PLOTLY_FONT_COLOR = "#e2e8f0" if _dark else "#1a202c"
+_card_bg     = "#151921" if _dark else "#f8fafc"
+_card_border = "#232a35" if _dark else "#e2e8f0"
+_muted       = "#94a3b8" if _dark else "#64748b"
 
 def make_gauge_fig(value):
     """Manomètre de conformité (esthétique tuyauterie/pression)."""
@@ -776,52 +779,6 @@ def make_params_fig(df_pct, scope_label):
     return fig
 
 
-def make_bact_fig(df_bact, scope_label, has_detections=True):
-    """Barres groupées (ou ligne verte à 0) pour les paramètres bactériologiques."""
-    fig = go.Figure()
-
-    if has_detections:
-        for nom, color in BACT_COLORS.items():
-            sub = df_bact[df_bact["nom_parametre"] == nom] if df_bact is not None else pd.DataFrame()
-            if sub.empty:
-                continue
-            y_vals = [sub[sub["mois"] == m]["valeur_mediane"].values[0] if not sub[sub["mois"] == m].empty else 0 for m in range(1, 13)]
-            fig.add_trace(go.Bar(
-                x=MOIS_SHORT, y=y_vals, name=nom, marker_color=color,
-                hovertemplate=f"<b>{nom}</b><br>%{{x}} : %{{y:.0f}} détections<extra></extra>",
-            ))
-        yaxis = dict(title="Détections")
-        legend = dict(orientation="h", y=-0.30, x=0, font=dict(size=10))
-        annotations = []
-    else:
-        # Ligne verte à 0 + annotation
-        fig.add_trace(go.Scatter(
-            x=MOIS_SHORT, y=[0] * 12,
-            mode="lines", name="Détections",
-            line=dict(color="#32ff7e", width=2.5),
-            hovertemplate="%{x} : 0 détection<extra></extra>",
-        ))
-        yaxis = dict(title="Détections", range=[-1, 5], showticklabels=False)
-        legend = dict(showlegend=False)
-        annotations = [dict(
-            text="0 détection — E. coli · Entérocoques",
-            x=5.5, y=0.8, xref="x", yref="y",
-            font=dict(size=10, color="#32ff7e"), showarrow=False,
-        )]
-
-    fig.update_layout(
-        template=PLOTLY_TEMPLATE, height=220, barmode="group",
-        title=dict(text=f"Détections bactériologiques — {scope_label}", font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0),
-        yaxis=yaxis, xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
-        showlegend=has_detections, legend=legend if has_detections else dict(),
-        annotations=annotations,
-        margin=dict(l=10, r=10, t=40, b=10),
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=PLOTLY_FONT_COLOR),
-    )
-    return fig
-
-
 # Scope label
 if search_commune:
     params_label = search_commune
@@ -844,20 +801,33 @@ else:
             )
     with col_bact:
         _has_detections = bool(not df_bact.empty and df_bact["valeur_mediane"].sum() > 0)
-        st.plotly_chart(
-            make_bact_fig(df_bact if _has_detections else None, params_label, has_detections=_has_detections),
-            use_container_width=True, config={"displayModeBar": False},
-        )
+        if _has_detections:
+            _bg, _border, _accent = ("#1a0808", "#3a1515", "#ff4d4d") if _dark else ("#fff5f5", "#fed7d7", "#c53030")
+            _total = int(df_bact["valeur_mediane"].sum())
+            _breakdown = " · ".join(
+                f"{nom} : {int(df_bact[df_bact['nom_parametre'] == nom]['valeur_mediane'].sum())}"
+                for nom in BACT_COLORS
+                if not df_bact[df_bact["nom_parametre"] == nom].empty
+            )
+        else:
+            _bg, _border, _accent = ("#0a1f14", "#1e4030", "#32ff7e") if _dark else ("#f0fff4", "#9ae6b4", "#276749")
+            _total, _breakdown = 0, "E. coli · Entérocoques — RAS"
+
+        st.markdown(_md_html(f"""
+            <div style="background:{_bg}; border:2px solid {_accent}; border-radius:12px; padding:20px;
+                        height:220px; display:flex; flex-direction:column; justify-content:center;
+                        align-items:center; text-align:center;">
+                <div style="font-size:0.85rem; color:{_muted}; margin-bottom:6px;">Détections bactériologiques — {params_label}</div>
+                <div style="font-size:2.6rem; font-weight:800; color:{_accent}; line-height:1;">{_total}</div>
+                <div style="font-size:0.8rem; color:{_accent}; margin-top:8px;">{_breakdown}</div>
+            </div>
+        """), unsafe_allow_html=True)
 
 st.divider()
 
 # ============================================================
 # PANNEAU INFOS : À propos / Circulation de la donnée / Architecture
 # ============================================================
-
-_card_bg     = "#151921" if _dark else "#f8fafc"
-_card_border = "#232a35" if _dark else "#e2e8f0"
-_muted       = "#94a3b8" if _dark else "#64748b"
 
 TECH_BADGES = [
     ("Azure",      "#0078D4"),

@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.9.1 (2026-09-03)
+
+### Bug Fixes
+
+- **ui**: Logo refait - eau qui coule d'un tuyau ouvert
+  ([`af7c8a1`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/af7c8a1377f6164650fae71affc0783438696e36))
+
+Les references envoyees montraient de l'eau coulant d'un tuyau, pas un raccord qui fuit comme je
+  l'avais compris. Nouveau dessin : un segment de tuyau horizontal avec une extremite ouverte
+  (alesage fonce visible) d'où s'ecoule un filet d'eau se terminant en goutte, plus une petite
+  goutte secondaire pour suggerer un flux continu plutot qu'une goutte statique isolee.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.9.0 (2026-09-03)
 
 ### Features

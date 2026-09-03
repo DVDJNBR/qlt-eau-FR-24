@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v1.8.0 (2026-09-03)
+
+### Features
+
+- **ui**: Texte dans l'espace vide de la bande d'en-tete Streamlit
+  ([`55f1e36`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/55f1e36df88d6e3fe689fe045b6c9a6c73f25517))
+
+Le logo st.logo() laissait une grande zone vide a droite, dans la bande d'en-tete native de
+  Streamlit (header[data-testid="stHeader"], 60px de haut, z-index 999990). Pas d'API officielle
+  pour y injecter du contenu (verifie via recherche + tests) : overlay en position fixe, cale sur la
+  hauteur/z-index reels du header, pointer-events:none pour rester strictement non cliquable.
+  Affiche "Suivi qualite de l'eau potable" a cote du logo, comble l'espace au lieu de le laisser
+  vide.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.7.0 (2026-09-03)
 
 ### Features

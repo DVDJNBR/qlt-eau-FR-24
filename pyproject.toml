@@ -1,6 +1,6 @@
 [project]
 name = "wtr-qlt"
-version = "1.8.0"
+version = "1.8.1"
 description = "Water Quality Pipeline — France (Bronze → Silver → Gold + API)"
 readme = "README.md"
 requires-python = ">=3.13"

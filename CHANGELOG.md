@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.8.1 (2026-09-03)
+
+### Bug Fixes
+
+- **ui**: Embout arrondi du logo du meme cote que la goutte
+  ([`803f29c`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/803f29c59fdf9d387fa7500a14b74acdbed3a27b))
+
+Le cache arrondi etait a gauche et la goutte/ouverture a droite : deux extremites qui ne se
+  correspondent pas donnaient une impression de tuyau casse qui fuit. Redessine avec le tuyau a bord
+  plat a gauche (comme s'il continuait dans un mur, pas besoin de cache visible) et l'embout arrondi
+  + la goutte ensemble a droite, comme un robinet qui coule depuis son unique sortie.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.8.0 (2026-09-03)
 
 ### Features

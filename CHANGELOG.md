@@ -1,6 +1,29 @@
 # CHANGELOG
 
 
+## v1.9.0 (2026-09-03)
+
+### Features
+
+- **ui**: Restructuration Dashboard - recherche en haut, KPI empiles a droite de la carte
+  ([`6519578`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/651957847012d0bd9aeb39df8102482d736e79f3))
+
+- En-tete simplifie : le gros bloc icone+titre degrade est retire (logo et kicker vivent deja dans
+  la banniere native). Remplace par une petite ligne de contexte/source ("France - 2024 - Source :
+  Hub'Eau API"), meme esprit que nyc-taxi.dvdjnbr.fr. - Dashboard reorganise : recherche
+  departement/commune tout en haut, puis mois (pills) + carte + colonne KPI empilee verticalement a
+  droite de la carte (Zones, manometre Conformite, Conforme/Vigilance/ Alerte, et le statut
+  bacteriologique desormais integre dans cette meme colonne plutot qu'a cote du graphique
+  physico-chimique). Les graphiques (tendance de conformite, niveaux physico-chimiques) restent en
+  bas, seuls desormais dans le panneau du bas. -
+  get_params_scope()/PARAM_COLORS/BACT_COLORS/MOIS_SHORT deplaces plus haut dans le script (avant la
+  carte) puisque le statut bacteriologique en a besoin des la colonne KPI ; plus de calcul duplique.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.8.4 (2026-09-03)
 
 ### Bug Fixes

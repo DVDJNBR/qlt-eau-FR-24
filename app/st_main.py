@@ -235,17 +235,24 @@ selected_month = next(k for k, v in MOIS_LABELS.items() if v == selected_month_l
 # --- Header ---
 col_title, col_theme = st.columns([9, 1])
 with col_title:
-    title_text = "Qualité de l'eau potable — France 2024" if st.session_state.view_level == "National" else f"Qualité de l'eau potable — {dept_names.get(st.session_state.selected_dept_code, 'Département')} 2024"
+    scope_text = "France" if st.session_state.view_level == "National" else dept_names.get(st.session_state.selected_dept_code, "Département")
+    kicker_color = "#5b6472" if _dark else "#94a3b8"
 
     st.markdown(f"""
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;">
-                <path d="M12 2.5L7.5 8C5.5 10.5 4 13 4 15.5C4 19.5 7.5 22.5 12 22.5C16.5 22.5 20 19.5 20 15.5C20 13 18.5 10.5 16.5 8L12 2.5Z" fill="#3B82F6"/>
-                <path d="M12 11C10.5 11 9 12.5 9 14.5C9 14.7761 8.77614 15 8.5 15C8.22386 15 8 14.7761 8 14.5C8 11.5 10 10 12 10C12.2761 10 12.5 10.2239 12.5 10.5C12.5 10.7761 12.2761 11 12 11Z" fill="#60A5FA"/>
-                <circle cx="15.5" cy="16.5" r="1.5" fill="#BFDBFE"/>
-                <circle cx="12.5" cy="18.5" r="1" fill="#93C5FD"/>
-            </svg>
-            <h1 style="margin: 0; padding: 0; font-size: 2.4rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{title_text}</h1>
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div style="flex-shrink: 0; width: 52px; height: 52px; border-radius: 14px;
+                        background: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
+                        display: flex; align-items: center; justify-content: center;
+                        box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2.5L7.5 8C5.5 10.5 4 13 4 15.5C4 19.5 7.5 22.5 12 22.5C16.5 22.5 20 19.5 20 15.5C20 13 18.5 10.5 16.5 8L12 2.5Z" fill="#ffffff"/>
+                    <path d="M9.2 15.8C9.2 13.4 10.8 11.6 12.8 11.6" stroke="#60A5FA" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+                </svg>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1;">
+                <span style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; color: {kicker_color}; text-transform: uppercase;">Suivi qualité de l'eau potable</span>
+                <h1 style="margin: 0; padding: 0; font-size: 2.15rem; font-weight: 800; line-height: 1.25; letter-spacing: -0.02em; background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{scope_text} <span style="opacity: 0.55;">· 2024</span></h1>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 

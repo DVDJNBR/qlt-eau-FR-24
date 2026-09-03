@@ -1,6 +1,42 @@
 # CHANGELOG
 
 
+## v1.11.0 (2026-09-03)
+
+### Features
+
+- **ui**: Compaction verticale du dashboard + logo tuyau incliné + fill aqueux
+  ([`382b4e9`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/382b4e951ed1addbb3f4f9b7d698d0803b7a7f39))
+
+- En-tête : la source ("France/departement · 2024 · Source : Hub'Eau API") rejoint le kicker dans la
+  bande native de Streamlit au lieu d'une ligne dans le corps de page ; le divider juste en dessous
+  est retiré. - Recherche département/commune : empilée verticalement dans une colonne étroite (au
+  lieu de deux champs pleine largeur côte à côte), laissant toute la largeur restante aux mois. -
+  Mois : grille 6 colonnes x 2 rangées (au lieu d'une colonne de pills étirée tout en hauteur à
+  gauche de la carte) - la sélection tient dans une seule bande en haut, à côté de la recherche. -
+  Carte nationale : les 5 insets DOM-TOM passent d'une rangée sous la carte à une colonne empilée à
+  gauche, la carte métropole récupère cette largeur. Hauteurs de carte réduites (680/580 ->
+  460/420). - KPI : passent d'une colonne empilée tout en hauteur à une grille 2x2 compacte (Zones +
+  manomètre Conformité en haut, statuts Conforme/ Vigilance/Alerte + Bactério en bas). - Graphiques
+  du bas : hauteurs réduites (220/240/260 -> 150/150/170), dividers entre panneaux retirés -
+  l'ensemble tient dans une fraction de l'espace vertical utilisé avant. - Ligne de conformité : le
+  fillgradient ("aqueuse") qui rendait invisible avec fill="tozeroy" (dégradé étiré jusqu'à 0%, bien
+  en dehors du cadrage [ymin,ymax]) est remplacé par un fill="tonexty" contre une ligne de base
+  invisible calée sur le bas de l'axe visible. Le dégradé reste maintenant entièrement dans la zone
+  visible et se voit clairement (bleu soutenu sous la ligne, s'estompant vers le bas). - Logo :
+  nouvelle passe, tuyau incliné (simple capsule arrondie pivotée) avec une goutte qui tombe de
+  l'extrémité basse, séparée par un espace net - se lit clairement même à la taille d'icône, sans
+  ajout de symbole santé/labo (demande explicite : rien de plus).
+
+Note : les inserts DOM-TOM national restent vides à l'affichage - vérifié que agg_dept_mois.parquet
+  n'a aucune ligne pour 971/972/973/ 974/976 sur toute l'année. Pré-existant, pas une régression de
+  ce changement.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.10.0 (2026-09-03)
 
 ### Bug Fixes

@@ -546,6 +546,10 @@ with tab_dashboard:
         "Entérocoques": "#fb923c",
     }
     MOIS_SHORT = [MOIS_LABELS[m][:3] for m in range(1, 13)]
+    STATUS_COLORS = (
+        {"Conforme": "#32ff7e", "Vigilance": "#ffaf40", "Alerte": "#ff4d4d"} if _dark
+        else {"Conforme": "#276749", "Vigilance": "#c05621", "Alerte": "#c53030"}
+    )
 
     def get_params_scope(df_dept, df_commune):
         """Retourne (df_pct, df_bact) selon la vue courante."""
@@ -933,6 +937,63 @@ with tab_dashboard:
     )
 
     st.caption("Source : Hub'Eau API (2024). Cliquez sur un département pour zoomer.")
+
+    st.divider()
+
+    # ============================================================
+    # ÉVOLUTION MENSUELLE DES ZONES PAR STATUT (empilées façon segments
+    # de tuyau : coins arrondis + liseré de "raccord" entre chaque
+    # segment, dans l'ordre où l'eau traverserait un tuyau conforme)
+    # ============================================================
+
+    @st.cache_data
+    def build_status_evolution(dept_code=None):
+        """Nb de zones Conforme/Vigilance/Alerte par mois (mêmes seuils que les KPI)."""
+        df = df_agg_commune[df_agg_commune["code_departement"] == dept_code] if dept_code else df_agg_dept
+        rows = []
+        for m in range(1, 13):
+            dm = df[df["mois"] == m]
+            rows.append({
+                "mois": MOIS_LABELS[m][:3],
+                "Conforme":  int((dm["compliance_rate"] >= 95).sum()),
+                "Vigilance": int(((dm["compliance_rate"] >= 80) & (dm["compliance_rate"] < 95)).sum()),
+                "Alerte":    int((dm["compliance_rate"] < 80).sum()),
+            })
+        return pd.DataFrame(rows)
+
+    def make_status_bars_fig(df_evo, title):
+        """Barres empilées, coins arrondis + liseré clair entre segments : lecture
+        façon coupe de tuyauterie (chaque segment = un raccord empilé sur l'autre)."""
+        fig = go.Figure()
+        gap_color = "#0e1117" if _dark else "#ffffff"
+        for statut in ("Conforme", "Vigilance", "Alerte"):
+            fig.add_trace(go.Bar(
+                x=df_evo["mois"], y=df_evo[statut],
+                name=statut,
+                marker=dict(
+                    color=STATUS_COLORS[statut],
+                    cornerradius=6,
+                    line=dict(width=2, color=gap_color),
+                ),
+                hovertemplate=f"{statut} — %{{x}} : %{{y}} zones<extra></extra>",
+            ))
+        fig.update_layout(
+            template=PLOTLY_TEMPLATE, height=240, barmode="stack", bargap=0.35,
+            title=dict(text=title, font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0, pad=dict(l=0)),
+            yaxis=dict(title="Zones", tickfont=dict(color=PLOTLY_FONT_COLOR), rangemode="tozero"),
+            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            margin=dict(l=10, r=10, t=35, b=10),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color=PLOTLY_FONT_COLOR),
+        )
+        return fig
+
+    df_status_evo = build_status_evolution(dc)
+    st.plotly_chart(
+        make_status_bars_fig(df_status_evo, f"Zones par statut, mois par mois — {trend_title}"),
+        use_container_width=True, config={"displayModeBar": False},
+    )
 
     st.divider()
 

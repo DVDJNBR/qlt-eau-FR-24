@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v1.2.0 (2026-09-03)
+
+### Features
+
+- **ui**: Page a onglets - A propos / Circulation de la donnee / Architecture
+  ([`1472ab7`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/1472ab7b574282109f1bd7e350b6f1605b3e696e))
+
+Trois onglets sous les graphiques, contenu repris du README (stack, pipeline Bronze-Silver-Gold,
+  star schema Gold) : - A propos : pitch du projet + badges tech (Azure, Databricks, Terraform,
+  Delta Lake, Python, FastAPI, Streamlit, Hub'Eau API) + lien GitHub. - Circulation de la donnee :
+  flow Hub'Eau -> Bronze -> Silver -> Gold -> Quality Checks -> API REST, couleurs alignees sur les
+  diagrammes mermaid du README. - Architecture cloud & BDD : cartes services Azure + detail du star
+  schema Gold (dimensions/faits/agregats).
+
+Ajout d'un helper _md_html() : le HTML multi-niveaux interpole (ex. boucle generant des <div>
+  imbriques) peut deborder de l'indentation du template englobant et se faire interpreter comme un
+  bloc de code Markdown au lieu de HTML brut. Le helper retire l'indentation de chaque ligne avant
+  st.markdown(..., unsafe_allow_html=True).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.1.0 (2026-09-03)
 
 ### Features

@@ -126,6 +126,32 @@ PLOTLY_TEMPLATE  = "plotly_dark" if _dark else "plotly"
 MAP_STYLE = "white-bg"
 PLOTLY_FONT_COLOR = "#e2e8f0" if _dark else "#1a202c"
 
+def make_gauge_fig(value):
+    """Manomètre de conformité (esthétique tuyauterie/pression)."""
+    needle_color = "#e2e8f0" if _dark else "#1a202c"
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=value,
+        number=dict(suffix="%", font=dict(size=22, color=PLOTLY_FONT_COLOR)),
+        gauge=dict(
+            axis=dict(range=[70, 100], showticklabels=False, ticks=""),
+            bar=dict(color=needle_color, thickness=0.25),
+            bgcolor="rgba(0,0,0,0)",
+            borderwidth=0,
+            steps=[
+                dict(range=[70, 80], color="#ff4d4d"),
+                dict(range=[80, 95], color="#ffaf40"),
+                dict(range=[95, 100], color="#32ff7e"),
+            ],
+        ),
+    ))
+    fig.update_layout(
+        height=110, margin=dict(l=15, r=15, t=5, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=PLOTLY_FONT_COLOR),
+    )
+    return fig
+
 # Injection CSS adaptative
 # NB : depuis Streamlit ~1.56 les boutons pills n'ont plus de data-testid
 # "stBaseButton-pills(Active)" — on cible button[data-variant="pills"] et
@@ -281,7 +307,12 @@ nb_alerte    = len(df_m[df_m["compliance_rate"] < 80])
 
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Zones", f"{nb_zones}")
-c2.metric("Conformité", f"{mean_rate:.1f}%")
+with c2:
+    st.caption("Conformité")
+    st.plotly_chart(
+        make_gauge_fig(mean_rate),
+        use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
+    )
 
 if _dark:
     KPI_CARDS = [

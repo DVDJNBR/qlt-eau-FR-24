@@ -605,7 +605,9 @@ def build_commune_trend(commune_code):
         "Conformité": rate.to_numpy(),
     })
 
-def make_conformity_fig(df_td, title, zone_label="Zone", df_commune_td=None, commune_label=None):
+def make_conformity_fig(df_td, title, zone_label="Zone", df_commune_td=None, commune_label=None, emphasized=False):
+    """emphasized=True (zoom département) : ligne plus épaisse/saturée et courbe
+    lissée façon "flux d'eau", plutôt que le trait fin de la vue nationale."""
     vals = df_td["Conformité"].dropna()
     ymin = max(0, vals.min() - 5) if not vals.empty else 0
     ymax = min(100, vals.max() + 2) if not vals.empty else 100
@@ -616,14 +618,15 @@ def make_conformity_fig(df_td, title, zone_label="Zone", df_commune_td=None, com
             ymin = min(ymin, max(0, c_vals.min() - 5))
             ymax = max(ymax, min(100, c_vals.max() + 2))
 
+    line_color = "#3b82f6" if emphasized else "#60a5fa"
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df_td["mois"], y=df_td["Conformité"],
         name=zone_label,
         mode="lines+markers",
-        line=dict(color="#60a5fa", width=2.5),
-        marker=dict(size=6, color="#60a5fa"),
-        fill="tozeroy", fillcolor="rgba(96,165,250,0.08)",
+        line=dict(color=line_color, width=4 if emphasized else 2.5, shape="spline" if emphasized else "linear"),
+        marker=dict(size=7 if emphasized else 6, color=line_color),
+        fill="tozeroy", fillcolor="rgba(59,130,246,0.18)" if emphasized else "rgba(96,165,250,0.08)",
         hovertemplate=f"{zone_label} — %{{x}} : %{{y:.1f}}%<extra></extra>",
     ))
 
@@ -678,6 +681,7 @@ st.plotly_chart(
         zone_label=trend_zone,
         df_commune_td=df_commune_td,
         commune_label=commune_label,
+        emphasized=(st.session_state.view_level == "Department"),
     ),
     use_container_width=True, config={"displayModeBar": False},
 )

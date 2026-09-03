@@ -113,7 +113,7 @@ if "dark_mode"            not in st.session_state: st.session_state.dark_mode   
 # Thème courant
 _dark            = st.session_state.get("dark_mode", False)
 PLOTLY_TEMPLATE  = "plotly_dark" if _dark else "plotly"
-MAP_STYLE        = "carto-darkmatter" if _dark else "carto-positron"
+MAP_STYLE        = "white-bg"  # carto-* nécessite désormais une clé API
 PLOTLY_FONT_COLOR = "#e2e8f0" if _dark else "#1a202c"
 
 # Injection CSS adaptative

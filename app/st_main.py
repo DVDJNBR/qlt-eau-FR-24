@@ -201,16 +201,26 @@ _CSS_COMMON = """
     .st-key-selected_month_label button[data-variant="pills"] {
         width: 100% !important; justify-content: center !important;
     }
-    /* Toggle thème : éviter le retour à la ligne du label */
-    .st-key-dark_mode label p { white-space: nowrap !important; }
-    /* Icône lune à gauche du switch plutôt qu'à droite */
-    .st-key-dark_mode label { flex-direction: row-reverse !important; justify-content: flex-end !important; gap: 8px !important; }
-    /* Widget réel repositionné dans la bannière native (même principe que le
-       kicker de titre) : au-dessus du z-index du header (999990), cliquable. */
+    /* Toggle thème : discret (gris, pas de bleu), repositionné dans la
+       bannière native (au-dessus du z-index du header 999990). Soleil/lune
+       en ::before/::after (data URI) plutôt qu'en éléments markdown à côté
+       du widget : un st.container flex autour du toggle cassait le clic
+       (le widget restait bloqué sur son état initial, cf. historique). */
     .st-key-dark_mode {
         position: fixed !important; top: 0 !important; right: 160px !important;
         height: 60px !important; display: flex !important; align-items: center !important;
         z-index: 1000001 !important; width: auto !important;
+    }
+    .st-key-dark_mode label > div:nth-of-type(1) {
+        background-color: #8b95a1 !important;
+    }
+    .st-key-dark_mode::before {
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5' fill='%239aa4b2'/%3E%3Cg stroke='%239aa4b2' stroke-width='2' stroke-linecap='round'%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.2' y1='4.2' x2='5.6' y2='5.6'/%3E%3Cline x1='18.4' y1='18.4' x2='19.8' y2='19.8'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.2' y1='19.8' x2='5.6' y2='18.4'/%3E%3Cline x1='18.4' y1='5.6' x2='19.8' y2='4.2'/%3E%3C/g%3E%3C/svg%3E");
+        margin-right: 6px; display: flex; align-items: center;
+    }
+    .st-key-dark_mode::after {
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath d='M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z' fill='%239aa4b2'/%3E%3C/svg%3E");
+        margin-left: 6px; display: flex; align-items: center;
     }
 """
 # Carte KPI "Conformité" (manomètre) : même habillage que les cartes colorées
@@ -332,20 +342,21 @@ st.markdown(f"""
                     display: flex; align-items: center; justify-content: center;
                     box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="0.5" y="6.5" width="14.5" height="6" rx="1" fill="#ffffff"/>
-                <rect x="14" y="4.5" width="5.5" height="10" rx="2.6" fill="#ffffff"/>
-                <ellipse cx="19" cy="9.5" rx="1.3" ry="2.8" fill="#2563EB"/>
-                <path d="M19 14.3C19 14.3 15.9 18.3 15.9 20.4C15.9 22 17.2 23.2 19 23.2C20.8 23.2 22.1 22 22.1 20.4C22.1 18.3 19 14.3 19 14.3Z" fill="#ffffff"/>
-                <path d="M17.4 20.6C17.4 19.6 18 18.8 18.8 18.8" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
+                <rect x="6" y="7" width="6" height="7" rx="1" fill="#ffffff"/>
+                <rect x="11.5" y="5.5" width="6" height="10" rx="3" fill="#ffffff"/>
+                <ellipse cx="14.5" cy="10.5" rx="1.3" ry="2.6" fill="#2563EB"/>
+                <path d="M14.5 15.5C14.5 15.5 11.7 19 11.7 21C11.7 22.6 12.9 23.8 14.5 23.8C16.1 23.8 17.3 22.6 17.3 21C17.3 19 14.5 15.5 14.5 15.5Z" fill="#ffffff"/>
+                <path d="M13.1 21.2C13.1 20.3 13.6 19.6 14.3 19.6" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
             </svg>
         </div>
         <h1 style="margin: 0; padding: 0; font-size: 2.15rem; font-weight: 800; line-height: 1.25; letter-spacing: -0.02em; background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{scope_text} <span style="opacity: 0.55;">· 2024</span></h1>
     </div>
 """, unsafe_allow_html=True)
 
-# Toggle dark mode : widget réel (doit rester un st.toggle pour fonctionner),
-# repositionné en CSS dans la bannière native (cf. .st-key-dark_mode plus haut).
-st.toggle("🌙", key="dark_mode", help="Mode sombre")
+# Toggle dark mode : widget seul (pas de container/markdown à côté — ça
+# cassait le clic, cf. commentaire CSS plus haut). Soleil/lune en CSS
+# ::before/::after sur .st-key-dark_mode, purement décoratif.
+st.toggle("Mode sombre", key="dark_mode", label_visibility="collapsed")
 
 st.divider()
 

@@ -210,6 +210,9 @@ __marimo__/
 _ressources/
 _older/
 
+# Terraform infrastructure (local only — deploy with `invoke azure-deploy`)
+.cloud/
+
 # Terraform files
 *.tfstate
 *.tfstate.*
@@ -220,6 +223,25 @@ tfplan
 tfplan.*
 
 # Azure CLI
-.azure/# Terr
-aform sensitive variables
+.azure/
+
+# Terraform sensitive variables
 .env.terraform
+
+# Project-specific ignores
+_bmad/
+_bmad-output/
+.claude/
+.gemini/
+logs/
+node_modules/
+package.json
+package-lock.json
+NOTES_PERSO.md
+PROJECT_STATUS.md
+DATABRICKS_COST_OPTIMIZATION.md
+test.ipynb
+test-silver.ipynb
+main.py
+scripts/test_*.py
+docs/

@@ -1,18 +1,30 @@
 [project]
 name = "wtr-qlt"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "Water Quality Pipeline — France (Bronze → Silver → Gold + API)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    # Infrastructure
     "invoke>=2.2.1",
     "loguru>=0.7.3",
     "rich>=14.2.0",
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+    # Azure
+    "azure-storage-blob>=12.27.0",
+    "azure-storage-file-datalake>=12.14.0",
+    # API
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pandas>=2.3.3",
+    "deltalake[pyarrow]>=0.22.0",
+    # Orchestration
+    "databricks-sdk>=0.30.0",
 ]
 
-
-
-
+[tool.setuptools]
+packages = []
 
 [tool.uv]
 package = true
@@ -20,5 +32,5 @@ package = true
 [dependency-groups]
 dev = [
     "icecream>=2.1.8",
-    "rich>=14.2.0",
+    "ruff>=0.4.0",
 ]

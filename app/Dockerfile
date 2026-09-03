@@ -20,6 +20,7 @@ RUN pip install --no-cache-dir \
 # Copie des fichiers de l'application
 COPY st_main.py .
 COPY .streamlit/ .streamlit/
+COPY assets/ assets/
 
 # Création du dossier data s'il n'existe pas
 RUN mkdir -p data

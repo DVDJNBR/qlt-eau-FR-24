@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v1.5.0 (2026-09-03)
+
+### Features
+
+- **ui**: Ligne de conformite accentuee en zoom departement
+  ([`bf31b5e`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/bf31b5e98aea1d59d9ed0e4630110e9e456afa35))
+
+Idee exploratoire : donner un effet "flux d'eau" a la ligne de conformite quand on zoome sur un
+  departement plutot que la vue nationale. Version simple et fiable plutot qu'une vraie animation
+  SVG (fragile a maintenir avec les classes generees par Plotly) : ligne plus epaisse (4px vs
+  2.5px), plus saturee, courbe lissee (shape=spline) et remplissage plus opaque. mode Streamlit non
+  verifie visuellement cette fois (outillage navigateur bloque sur plusieurs tabs), mais changement
+  mecanique sans nouvelle surface d'API Plotly.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.4.0 (2026-09-03)
 
 ### Features

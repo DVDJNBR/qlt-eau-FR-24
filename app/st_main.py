@@ -205,6 +205,13 @@ _CSS_COMMON = """
     .st-key-dark_mode label p { white-space: nowrap !important; }
     /* Icône lune à gauche du switch plutôt qu'à droite */
     .st-key-dark_mode label { flex-direction: row-reverse !important; justify-content: flex-end !important; gap: 8px !important; }
+    /* Widget réel repositionné dans la bannière native (même principe que le
+       kicker de titre) : au-dessus du z-index du header (999990), cliquable. */
+    .st-key-dark_mode {
+        position: fixed !important; top: 0 !important; right: 160px !important;
+        height: 60px !important; display: flex !important; align-items: center !important;
+        z-index: 1000001 !important; width: auto !important;
+    }
 """
 # Carte KPI "Conformité" (manomètre) : même habillage que les cartes colorées
 # (fond/bordure/coins arrondis) pour que les 5 blocs de la ligne KPI soient
@@ -313,35 +320,32 @@ selected_month_label = st.session_state["selected_month_label"] or "Janvier"
 selected_month = next(k for k, v in MOIS_LABELS.items() if v == selected_month_label)
 
 # --- Header ---
-col_title, col_theme = st.columns([7, 1])
-with col_title:
-    scope_text = "France" if st.session_state.view_level == "National" else dept_names.get(st.session_state.selected_dept_code, "Département")
-    kicker_color = "#5b6472" if _dark else "#94a3b8"
+# Le kicker "Suivi qualité de l'eau potable" vit déjà dans la bannière native
+# (overlay plus haut) : pas de doublon ici, juste l'icône + le titre dynamique
+# (qui ne peut pas aller dans st.logo, image statique uniquement).
+scope_text = "France" if st.session_state.view_level == "National" else dept_names.get(st.session_state.selected_dept_code, "Département")
 
-    st.markdown(f"""
-        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-            <div style="flex-shrink: 0; width: 52px; height: 52px; border-radius: 14px;
-                        background: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
-                        display: flex; align-items: center; justify-content: center;
-                        box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="0.5" y="7.5" width="15" height="4" rx="0.5" fill="#ffffff"/>
-                    <rect x="14.5" y="5.5" width="4.5" height="8" rx="2.2" fill="#ffffff"/>
-                    <ellipse cx="18.7" cy="9.5" rx="1.1" ry="2" fill="#2563EB"/>
-                    <path d="M18.7 11.5C18.7 11.5 16 15 16 17.2C16 18.9 17.2 20.2 18.7 20.2C20.2 20.2 21.4 18.9 21.4 17.2C21.4 15 18.7 11.5 18.7 11.5Z" fill="#ffffff"/>
-                    <path d="M17.3 17.6C17.3 16.7 17.8 16 18.5 16" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1;">
-                <span style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; color: {kicker_color}; text-transform: uppercase;">Suivi qualité de l'eau potable</span>
-                <h1 style="margin: 0; padding: 0; font-size: 2.15rem; font-weight: 800; line-height: 1.25; letter-spacing: -0.02em; background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{scope_text} <span style="opacity: 0.55;">· 2024</span></h1>
-            </div>
+st.markdown(f"""
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+        <div style="flex-shrink: 0; width: 52px; height: 52px; border-radius: 14px;
+                    background: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0.5" y="6.5" width="14.5" height="6" rx="1" fill="#ffffff"/>
+                <rect x="14" y="4.5" width="5.5" height="10" rx="2.6" fill="#ffffff"/>
+                <ellipse cx="19" cy="9.5" rx="1.3" ry="2.8" fill="#2563EB"/>
+                <path d="M19 14.3C19 14.3 15.9 18.3 15.9 20.4C15.9 22 17.2 23.2 19 23.2C20.8 23.2 22.1 22 22.1 20.4C22.1 18.3 19 14.3 19 14.3Z" fill="#ffffff"/>
+                <path d="M17.4 20.6C17.4 19.6 18 18.8 18.8 18.8" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
+            </svg>
         </div>
-    """, unsafe_allow_html=True)
+        <h1 style="margin: 0; padding: 0; font-size: 2.15rem; font-weight: 800; line-height: 1.25; letter-spacing: -0.02em; background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{scope_text} <span style="opacity: 0.55;">· 2024</span></h1>
+    </div>
+""", unsafe_allow_html=True)
 
-with col_theme:
-    st.markdown("<div style='margin-top:18px'></div>", unsafe_allow_html=True)
-    st.toggle("🌙", key="dark_mode", help="Mode sombre")
+# Toggle dark mode : widget réel (doit rester un st.toggle pour fonctionner),
+# repositionné en CSS dans la bannière native (cf. .st-key-dark_mode plus haut).
+st.toggle("🌙", key="dark_mode", help="Mode sombre")
 
 st.divider()
 

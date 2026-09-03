@@ -325,11 +325,11 @@ with col_title:
                         display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="5.5" width="3.2" height="8" rx="1.2" fill="#ffffff"/>
-                    <rect x="3" y="7" width="15" height="5" rx="2.5" fill="#ffffff"/>
-                    <ellipse cx="17" cy="9.5" rx="1.4" ry="2.3" fill="#2563EB"/>
-                    <path d="M17 11.5C17 11.5 14.3 15 14.3 17C14.3 18.6 15.5 19.8 17 19.8C18.5 19.8 19.7 18.6 19.7 17C19.7 15 17 11.5 17 11.5Z" fill="#ffffff"/>
-                    <path d="M15.6 17.4C15.6 16.5 16.1 15.8 16.8 15.8" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
+                    <rect x="0.5" y="7.5" width="15" height="4" rx="0.5" fill="#ffffff"/>
+                    <rect x="14.5" y="5.5" width="4.5" height="8" rx="2.2" fill="#ffffff"/>
+                    <ellipse cx="18.7" cy="9.5" rx="1.1" ry="2" fill="#2563EB"/>
+                    <path d="M18.7 11.5C18.7 11.5 16 15 16 17.2C16 18.9 17.2 20.2 18.7 20.2C20.2 20.2 21.4 18.9 21.4 17.2C21.4 15 18.7 11.5 18.7 11.5Z" fill="#ffffff"/>
+                    <path d="M17.3 17.6C17.3 16.7 17.8 16 18.5 16" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
                 </svg>
             </div>
             <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1;">

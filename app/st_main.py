@@ -292,8 +292,12 @@ with col_title:
                         display: flex; align-items: center; justify-content: center;
                         box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2.5L7.5 8C5.5 10.5 4 13 4 15.5C4 19.5 7.5 22.5 12 22.5C16.5 22.5 20 19.5 20 15.5C20 13 18.5 10.5 16.5 8L12 2.5Z" fill="#ffffff"/>
-                    <path d="M9.2 15.8C9.2 13.4 10.8 11.6 12.8 11.6" stroke="#60A5FA" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+                    <rect x="3.5" y="18" width="17" height="3.2" rx="1.6" fill="#ffffff" opacity="0.85"/>
+                    <rect x="10.5" y="14" width="3" height="4.5" rx="1" fill="#ffffff"/>
+                    <circle cx="12" cy="9" r="5" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="12" y1="4" x2="12" y2="14" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="7" y1="9" x2="17" y2="9" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="9" r="1.6" fill="#ffffff"/>
                 </svg>
             </div>
             <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1;">

@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v1.8.2 (2026-09-03)
+
+### Bug Fixes
+
+- **ui**: Tuyau du logo plus epais + toggle dark mode deplace dans la banniere native
+  ([`4d76360`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/4d76360ce415f341f0b517d7e24438f54e23f950))
+
+- Logo : corps du tuyau trop fin pour se lire comme un tuyau. Epaissi (hauteur doublee, embout et
+  goutte agrandis en consequence). - Toggle dark mode deplace dans la banniere native de Streamlit,
+  a cote du kicker deja present : meme technique (overlay CSS position fixed cale sur le z-index
+  reel du header), mais cette fois un vrai widget st.toggle() repositionne plutot qu'un texte
+  decoratif, donc toujours cliquable. Positionne a right:160px pour ne pas chevaucher les boutons
+  natifs Deploy/⋮ (premier essai a right:16px les recouvrait completement). - Le bloc titre du corps
+  de page n'a plus besoin de dupliquer le kicker "Suivi qualite de l'eau potable" (deja dans la
+  banniere) ni le toggle (deplace lui aussi) : ne reste que l'icone + le titre dynamique (France /
+  departement selectionne), qui ne peut pas aller dans st.logo (image statique uniquement).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.8.1 (2026-09-03)
 
 ### Bug Fixes

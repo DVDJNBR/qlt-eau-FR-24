@@ -68,13 +68,15 @@ MOIS_LABELS = {
 # Colorscale partagée (format go.Figure)
 COLOR_SCALE = [[0.0, "#ff4d4d"], [0.8, "#ffaf40"], [0.95, "#32ff7e"], [1.0, "#18dcff"]]
 
-# Config insets DOM-TOM : (code, nom, lat, lon, zoom, x_domain)
+# Config insets DOM-TOM : (code, nom, lat, lon, zoom, y_domain)
+# Empilés verticalement dans une colonne à gauche de la carte métropole
+# (plutôt qu'une rangée sous la carte) : y_domain va du haut vers le bas.
 DOM_TOM_CONFIG = [
-    ("971", "Guadeloupe",  16.17, -61.57,  7.5, [0.00, 0.185]),
-    ("972", "Martinique",  14.67, -61.00,  8.5, [0.20, 0.385]),
-    ("973", "Guyane",       4.00, -53.00,  4.5, [0.40, 0.585]),
-    ("974", "La Réunion", -21.10,  55.50,  7.0, [0.60, 0.785]),
-    ("976", "Mayotte",    -12.80,  45.15,  9.5, [0.80, 0.985]),
+    ("971", "Guadeloupe",  16.17, -61.57,  7.5, [0.815, 1.000]),
+    ("972", "Martinique",  14.67, -61.00,  8.5, [0.610, 0.795]),
+    ("973", "Guyane",       4.00, -53.00,  4.5, [0.405, 0.590]),
+    ("974", "La Réunion", -21.10,  55.50,  7.0, [0.200, 0.385]),
+    ("976", "Mayotte",    -12.80,  45.15,  9.5, [0.000, 0.180]),
 ]
 DOMTOM_CODES = {c[0] for c in DOM_TOM_CONFIG}
 
@@ -141,6 +143,9 @@ _muted       = "#94a3b8" if _dark else "#64748b"
 # vide à droite du logo st.logo(). Pas d'API officielle pour y injecter du
 # contenu : overlay en position fixe, calé sur la hauteur réelle du header
 # (60px) et au-dessus de son z-index (999990). Purement visuel, non cliquable.
+# Le kicker est injecté ici (statique), la source/scope juste après le calcul
+# de scope_text plus bas (dépend du département sélectionné) — même bande,
+# deux injections successives pour éviter tout décalage d'affichage.
 st.markdown(f"""
     <div style="position:fixed; top:0; left:65px; height:60px; z-index:1000000;
                 display:flex; align-items:center; pointer-events:none;">
@@ -157,7 +162,7 @@ def make_gauge_fig(value):
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
-        number=dict(suffix="%", font=dict(size=22, color=PLOTLY_FONT_COLOR)),
+        number=dict(suffix="%", font=dict(size=17, color=PLOTLY_FONT_COLOR)),
         gauge=dict(
             axis=dict(range=[70, 100], showticklabels=False, ticks=""),
             bar=dict(color=needle_color, thickness=0.25),
@@ -184,22 +189,15 @@ def make_gauge_fig(value):
 _CSS_COMMON = """
     /* Largeur max */
     .block-container { max-width: 1400px !important; padding-left: 2rem !important; padding-right: 2rem !important; }
-    /* Sélecteur de mois : pills empilés verticalement, étirés sur toute la
-       hauteur de la carte à droite (espacement égal plutôt qu'un petit gap fixe). */
-    .st-key-selected_month_label, .st-key-selected_month_label > div {
-        height: 100% !important;
-    }
-    .st-key-selected_month_label div[data-testid="stButtonGroup"] {
-        display: flex !important; flex-direction: column !important;
-        align-items: stretch !important; justify-content: space-between !important;
-        height: 100% !important; width: 100% !important;
-    }
+    /* Sélecteur de mois : grille 6 colonnes x 2 rangées (une seule bande en
+       haut, à côté de la recherche, plutôt qu'une colonne étroite tout en
+       hauteur à gauche de la carte). */
     .st-key-selected_month_label div[data-testid="stButtonGroup"] > div {
-        display: flex !important; flex-direction: column !important;
-        justify-content: space-between !important; height: 100% !important; width: 100% !important;
+        display: flex !important; flex-direction: row !important; flex-wrap: wrap !important;
+        gap: 6px !important;
     }
     .st-key-selected_month_label button[data-variant="pills"] {
-        width: 100% !important; justify-content: center !important;
+        flex: 0 0 calc(16.666% - 6px) !important; justify-content: center !important;
     }
     /* Toggle thème : discret (gris, pas de bleu), repositionné dans la
        bannière native (au-dessus du z-index du header 999990). Soleil/lune
@@ -347,19 +345,25 @@ selected_month_label = st.session_state["selected_month_label"] or "Janvier"
 selected_month = next(k for k, v in MOIS_LABELS.items() if v == selected_month_label)
 
 # --- Header ---
-# Le logo + le kicker "Suivi qualité de l'eau potable" vivent déjà dans la
-# bannière native (overlay plus haut) : plus besoin de les répéter ici avec
-# un gros bloc icône+titre. Juste une petite ligne de contexte/source, comme
-# sur nyc-taxi.dvdjnbr.fr.
+# Le logo + le kicker vivent dans la bannière native (overlay plus haut).
+# scope_text dépend du département sélectionné (mis à jour juste au-dessus,
+# après l'auto-détection depuis une commune) : injecté ici, juste à droite
+# du kicker, dans la même bande fixe plutôt que sur une ligne dans le corps
+# de page — récupère la place que prenait l'ancien st.caption().
 scope_text = "France" if st.session_state.view_level == "National" else dept_names.get(st.session_state.selected_dept_code, "Département")
-st.caption(f"{scope_text} · 2024 · Source : Hub'Eau API")
+st.markdown(f"""
+    <div style="position:fixed; top:0; left:300px; height:60px; z-index:1000000;
+                display:flex; align-items:center; pointer-events:none;">
+        <span style="font-size:0.68rem; color:{_muted}; opacity:0.75;">
+            {scope_text} · 2024 · Source : Hub'Eau API
+        </span>
+    </div>
+""", unsafe_allow_html=True)
 
 # Toggle dark mode : widget seul (pas de container/markdown à côté — ça
 # cassait le clic, cf. commentaire CSS plus haut). Soleil/lune en CSS
 # ::before/::after sur .st-key-dark_mode, purement décoratif.
 st.toggle("Mode sombre", key="dark_mode", label_visibility="collapsed")
-
-st.divider()
 
 # ============================================================
 # PANNEAU INFOS : À propos / Circulation de la donnée / Architecture
@@ -486,17 +490,18 @@ with tab_dashboard:
             (df_agg_commune["code_departement"] == dept_code)
         ]
 
-    # --- Recherche (tout en haut) ---
-    st.caption("Rechercher par")
-    sr_dept, sr_commune, sr_reset = st.columns([6, 6, 2])
+    # --- Recherche (étroite, empilée) + mois (grille 6x2), une seule rangée
+    # en haut : la sélection tient dans une bande au lieu d'une ligne
+    # recherche pleine largeur + une colonne mois tout en hauteur. ---
+    col_search, col_months = st.columns([3, 9], gap="medium")
 
-    with sr_dept:
-        search_dept  = st.selectbox(
+    with col_search:
+        search_dept = st.selectbox(
             "Département",
             options=list(dept_options.keys()),
             format_func=lambda c: dept_options[c],
             index=0,
-            placeholder="Rechercher un département…",
+            placeholder="Département…",
             key="dept_search",
         )
         if search_dept and search_dept != st.session_state.get("selected_dept_code"):
@@ -504,17 +509,14 @@ with tab_dashboard:
             st.session_state.view_level = "Department"
             st.rerun()
 
-    with sr_commune:
         search_commune = st.selectbox(
             "Commune",
             options=[""] + sorted_communes,
             index=0,
-            placeholder="Rechercher une commune…",
+            placeholder="Commune…",
             key="commune_search",
         )
 
-    with sr_reset:
-        st.markdown("<div style='margin-top:28px'></div>", unsafe_allow_html=True)
         st.button(
             "← Retour",
             on_click=reset_view,
@@ -522,7 +524,12 @@ with tab_dashboard:
             use_container_width=True,
         )
 
-    st.divider()
+    with col_months:
+        st.pills(
+            "Mois", options=list(MOIS_LABELS.values()),
+            key="selected_month_label",
+            label_visibility="collapsed",
+        )
 
     # --- KPIs : calculs (rendu plus bas, dans la colonne à droite de la carte) ---
     nb_zones    = len(df_m)
@@ -597,7 +604,7 @@ with tab_dashboard:
             colorscale=COLOR_SCALE, cmin=70, cmax=100,
             colorbar=dict(
                 title=dict(text="%", font=dict(size=11)),
-                thickness=12, len=0.35, x=0.005, y=0.65, yanchor="middle",
+                thickness=12, len=0.35, x=0.175, y=0.85, yanchor="top",
             ),
         )
 
@@ -632,75 +639,85 @@ with tab_dashboard:
         ]
         return {"type": "FeatureCollection", "features": features}
 
-    col_months, col_map, col_kpi = st.columns([1.1, 6.4, 2.5], gap="medium")
-
-    with col_months:
-        st.pills(
-            "Mois", options=list(MOIS_LABELS.values()),
-            key="selected_month_label",
-            label_visibility="collapsed",
-        )
+    col_map, col_kpi = st.columns([7.5, 2.5], gap="medium")
 
     with col_kpi:
-        st.markdown(f"""
-            <div style="background:{_card_bg};border:1px solid {_card_border};padding:10px 14px;border-radius:12px;
-                        display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <span style="font-size:0.8rem;color:{_muted}">Zones</span>
-                <span style="font-size:1.3rem;font-weight:700;color:{PLOTLY_FONT_COLOR}">{nb_zones}</span>
-            </div>
-        """, unsafe_allow_html=True)
-
-        with st.container(key="gauge_card"):
-            st.caption("Conformité")
-            st.plotly_chart(
-                make_gauge_fig(mean_rate),
-                use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
-            )
-
-        if _dark:
-            KPI_ROWS = [
-                ("Conforme ≥95%",    nb_conforme,  "#0a1f14", "#1e4030", "#32ff7e"),
-                ("Vigilance 80–95%", nb_vigilance, "#1a1500", "#3a3000", "#ffaf40"),
-                ("Alerte <80%",      nb_alerte,    "#1a0808", "#3a1515", "#ff4d4d"),
-            ]
-        else:
-            KPI_ROWS = [
-                ("Conforme ≥95%",    nb_conforme,  "#f0fff4", "#9ae6b4", "#276749"),
-                ("Vigilance 80–95%", nb_vigilance, "#fffaf0", "#fbd38d", "#c05621"),
-                ("Alerte <80%",      nb_alerte,    "#fff5f5", "#fed7d7", "#c53030"),
-            ]
-        for label, count, bg, border, color in KPI_ROWS:
+        # KPI sur 2 rangées de 2 (au lieu d'une colonne empilée tout en
+        # hauteur) : rangée 1 = Zones + manomètre Conformité, rangée 2 =
+        # statuts Conforme/Vigilance/Alerte (compactés en une carte) + Bactério.
+        kpi_r1c1, kpi_r1c2 = st.columns(2, gap="small")
+        with kpi_r1c1:
             st.markdown(f"""
-                <div style="background:{bg};border:1px solid {border};padding:10px 14px;border-radius:12px;
-                            display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                    <span style="font-size:0.8rem;color:{_muted}">{label}</span>
-                    <span style="font-size:1.3rem;font-weight:700;color:{color}">{count}</span>
+                <div style="background:{_card_bg};border:1px solid {_card_border};border-radius:12px;
+                            height:150px;box-sizing:border-box;padding:10px 12px;
+                            display:flex;flex-direction:column;justify-content:center;align-items:center;">
+                    <span style="font-size:0.75rem;color:{_muted}">Zones</span>
+                    <span style="font-size:1.6rem;font-weight:700;color:{PLOTLY_FONT_COLOR}">{nb_zones}</span>
                 </div>
             """, unsafe_allow_html=True)
+        with kpi_r1c2:
+            with st.container(key="gauge_card"):
+                st.caption("Conformité")
+                st.plotly_chart(
+                    make_gauge_fig(mean_rate),
+                    use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
+                )
 
-        # Statut bactériologique, intégré dans la colonne KPI
-        _has_detections = bool(not df_bact.empty and df_bact["valeur_mediane"].sum() > 0)
-        if _has_detections:
-            _bact_bg, _bact_border, _bact_accent = ("#1a0808", "#3a1515", "#ff4d4d") if _dark else ("#fff5f5", "#fed7d7", "#c53030")
-            _bact_total = int(df_bact["valeur_mediane"].sum())
-            _bact_detail = " · ".join(
-                f"{nom} : {int(df_bact[df_bact['nom_parametre'] == nom]['valeur_mediane'].sum())}"
-                for nom in BACT_COLORS
-                if not df_bact[df_bact["nom_parametre"] == nom].empty
+        kpi_r2c1, kpi_r2c2 = st.columns(2, gap="small")
+        with kpi_r2c1:
+            if _dark:
+                KPI_ROWS = [
+                    ("Conforme",  nb_conforme,  "#32ff7e"),
+                    ("Vigilance", nb_vigilance, "#ffaf40"),
+                    ("Alerte",    nb_alerte,    "#ff4d4d"),
+                ]
+            else:
+                KPI_ROWS = [
+                    ("Conforme",  nb_conforme,  "#276749"),
+                    ("Vigilance", nb_vigilance, "#c05621"),
+                    ("Alerte",    nb_alerte,    "#c53030"),
+                ]
+            _rows_html = "".join(
+                f"""<div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-size:0.72rem;color:{_muted}">{label}</span>
+                        <span style="font-size:0.95rem;font-weight:700;color:{color}">{count}</span>
+                    </div>"""
+                for label, count, color in KPI_ROWS
             )
-        else:
-            _bact_bg, _bact_border, _bact_accent = ("#0a1f14", "#1e4030", "#32ff7e") if _dark else ("#f0fff4", "#9ae6b4", "#276749")
-            _bact_total, _bact_detail = 0, "E. coli · Entérocoques — RAS"
-
-        st.markdown(_md_html(f"""
-            <div style="background:{_bact_bg}; border:1px solid {_bact_border}; border-radius:12px; padding:12px 14px;">
-                <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <span style="font-size:0.8rem; color:{_muted};">Bactério.</span>
-                    <span style="font-size:1.3rem; font-weight:700; color:{_bact_accent};">{_bact_total}</span>
+            st.markdown(_md_html(f"""
+                <div style="background:{_card_bg};border:1px solid {_card_border};border-radius:12px;
+                            height:150px;box-sizing:border-box;padding:10px 12px;
+                            display:flex;flex-direction:column;justify-content:space-evenly;">
+                    {_rows_html}
                 </div>
-                <div style="font-size:0.7rem; color:{_bact_accent}; margin-top:4px;">{_bact_detail}</div>
-            </div>
-        """), unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
+
+        with kpi_r2c2:
+            # Statut bactériologique
+            _has_detections = bool(not df_bact.empty and df_bact["valeur_mediane"].sum() > 0)
+            if _has_detections:
+                _bact_bg, _bact_border, _bact_accent = ("#1a0808", "#3a1515", "#ff4d4d") if _dark else ("#fff5f5", "#fed7d7", "#c53030")
+                _bact_total = int(df_bact["valeur_mediane"].sum())
+                _bact_detail = " · ".join(
+                    f"{nom} : {int(df_bact[df_bact['nom_parametre'] == nom]['valeur_mediane'].sum())}"
+                    for nom in BACT_COLORS
+                    if not df_bact[df_bact["nom_parametre"] == nom].empty
+                )
+            else:
+                _bact_bg, _bact_border, _bact_accent = ("#0a1f14", "#1e4030", "#32ff7e") if _dark else ("#f0fff4", "#9ae6b4", "#276749")
+                _bact_total, _bact_detail = 0, "E. coli · Entérocoques — RAS"
+
+            st.markdown(_md_html(f"""
+                <div style="background:{_bact_bg}; border:1px solid {_bact_border}; border-radius:12px;
+                            height:150px; box-sizing:border-box; padding:10px 12px;
+                            display:flex; flex-direction:column; justify-content:center;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="font-size:0.75rem; color:{_muted};">Bactério.</span>
+                        <span style="font-size:1.3rem; font-weight:700; color:{_bact_accent};">{_bact_total}</span>
+                    </div>
+                    <div style="font-size:0.65rem; color:{_bact_accent}; margin-top:4px;">{_bact_detail}</div>
+                </div>
+            """), unsafe_allow_html=True)
 
     with col_map:
         if st.session_state.view_level == "National":
@@ -723,7 +740,7 @@ with tab_dashboard:
                 geo="geo",
             ))
 
-            for i, (code, name, lat, lon, zoom, x_dom) in enumerate(DOM_TOM_CONFIG):
+            for i, (code, name, lat, lon, zoom, y_dom) in enumerate(DOM_TOM_CONFIG):
                 feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == code]
                 if not feat:
                     continue
@@ -745,24 +762,23 @@ with tab_dashboard:
                     geo=f"geo{i+2}",
                 ))
                 fig.update_layout(**{f"geo{i+2}": geo_config(
-                    domain={"x": x_dom, "y": [0.01, 0.22]},
+                    domain={"x": [0, 0.14], "y": y_dom},
                 )})
 
-            # Étiquettes des insets
-            label_x = [0.093, 0.293, 0.493, 0.693, 0.893]
-            for (code, name, *_), x_c in zip(DOM_TOM_CONFIG, label_x):
+            # Étiquettes des insets, au-dessus de chaque inset empilé
+            for code, name, lat, lon, zoom, y_dom in DOM_TOM_CONFIG:
                 fig.add_annotation(
-                    text=name, x=x_c, y=0.235,
+                    text=name, x=0.07, y=y_dom[1] + 0.015,
                     xref="paper", yref="paper",
                     showarrow=False, font=dict(size=9, color="#718096"),
-                    xanchor="center",
+                    xanchor="center", yanchor="bottom",
                 )
 
             fig.update_layout(
                 **common_map_layout(),
-                geo=geo_config(domain={"x": [0, 1], "y": [0.25, 1.0]}),
+                geo=geo_config(domain={"x": [0.16, 1.0], "y": [0, 1.0]}),
                 coloraxis=coloraxis_config(),
-                height=680,
+                height=460,
             )
 
             event = st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="main_map")
@@ -797,7 +813,7 @@ with tab_dashboard:
                 **common_map_layout(),
                 geo=geo_config(),
                 coloraxis=coloraxis_config(),
-                height=580,
+                height=420,
             )
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key="dept_map")
             st.caption("Données cartographiques communes non disponibles pour ce territoire — affichage au niveau départemental.")
@@ -822,11 +838,9 @@ with tab_dashboard:
                 **common_map_layout(),
                 geo=geo_config(),
                 coloraxis=coloraxis_config(),
-                height=580,
+                height=420,
             )
             st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="dept_map")
-
-    st.divider()
 
     # ============================================================
     # PANNEAU BAS : Conformité temporelle + zoom commune
@@ -870,13 +884,29 @@ with tab_dashboard:
 
         line_color = "#3b82f6" if emphasized else "#60a5fa"
         fig = go.Figure()
+        # Ligne de base invisible calée sur le bas de l'axe visible : le fill
+        # "tonexty" contre cette ligne (plutôt que "tozeroy" jusqu'à 0%) garde
+        # le dégradé entièrement dans la zone visible du graphique — avec
+        # tozeroy le dégradé s'étirait jusqu'à 0%, bien en dehors du cadrage
+        # [ymin, ymax], et rendait un fill quasi invisible.
+        fig.add_trace(go.Scatter(
+            x=df_td["mois"], y=[ymin] * len(df_td),
+            mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip",
+        ))
         fig.add_trace(go.Scatter(
             x=df_td["mois"], y=df_td["Conformité"],
             name=zone_label,
             mode="lines+markers",
             line=dict(color=line_color, width=4 if emphasized else 2.5, shape="spline" if emphasized else "linear"),
             marker=dict(size=7 if emphasized else 6, color=line_color),
-            fill="tozeroy", fillcolor="rgba(59,130,246,0.18)" if emphasized else "rgba(96,165,250,0.08)",
+            fill="tonexty",
+            fillgradient=dict(
+                type="vertical",
+                colorscale=[
+                    [0, "rgba(59,130,246,0.42)" if emphasized else "rgba(96,165,250,0.22)"],
+                    [1, "rgba(59,130,246,0.02)" if emphasized else "rgba(96,165,250,0.01)"],
+                ],
+            ),
             hovertemplate=f"{zone_label} — %{{x}} : %{{y:.1f}}%<extra></extra>",
         ))
 
@@ -891,7 +921,7 @@ with tab_dashboard:
             ))
 
         fig.update_layout(
-            template=PLOTLY_TEMPLATE, height=220,
+            template=PLOTLY_TEMPLATE, height=150,
             title=dict(text=title, font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0, pad=dict(l=0)),
             yaxis=dict(range=[ymin, ymax], title="%", ticksuffix="%", tickfont=dict(color=PLOTLY_FONT_COLOR)),
             xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
@@ -938,8 +968,6 @@ with tab_dashboard:
 
     st.caption("Source : Hub'Eau API (2024). Cliquez sur un département pour zoomer.")
 
-    st.divider()
-
     # ============================================================
     # ÉVOLUTION MENSUELLE DES ZONES PAR STATUT (empilées façon segments
     # de tuyau : coins arrondis + liseré de "raccord" entre chaque
@@ -978,7 +1006,7 @@ with tab_dashboard:
                 hovertemplate=f"{statut} — %{{x}} : %{{y}} zones<extra></extra>",
             ))
         fig.update_layout(
-            template=PLOTLY_TEMPLATE, height=240, barmode="stack", bargap=0.35,
+            template=PLOTLY_TEMPLATE, height=150, barmode="stack", bargap=0.35,
             title=dict(text=title, font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0, pad=dict(l=0)),
             yaxis=dict(title="Zones", tickfont=dict(color=PLOTLY_FONT_COLOR), rangemode="tozero"),
             xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
@@ -994,8 +1022,6 @@ with tab_dashboard:
         make_status_bars_fig(df_status_evo, f"Zones par statut, mois par mois — {trend_title}"),
         use_container_width=True, config={"displayModeBar": False},
     )
-
-    st.divider()
 
     # ============================================================
     # GRAPHIQUES : niveaux physico-chimiques (PARAM_COLORS, MOIS_SHORT,
@@ -1037,7 +1063,7 @@ with tab_dashboard:
             ))
 
         fig.update_layout(
-            template=PLOTLY_TEMPLATE, height=260,
+            template=PLOTLY_TEMPLATE, height=170,
             title=dict(
                 text=f"Niveaux physico-chimiques — {scope_label} (% de la limite légale)",
                 font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0,

@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v1.3.0 (2026-09-03)
+
+### Features
+
+- **ui**: Carte de statut rouge/vert pour les detections bacteriologiques
+  ([`64dc250`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/64dc250f37986b2628eea444ceb98b208d0b314f))
+
+Le graphique en barres etait quasiment toujours vide (E. coli et Enterocoques a 0 la plupart du
+  temps), peu lisible. Remplace par une grosse carte de statut : verte "0 - RAS" quand rien a
+  signaler, rouge avec le total et le detail par parametre des qu'il y a une detection. Coherent
+  avec les cartes KPI (Conforme/Vigilance/Alerte) deja utilisees plus haut dans le tableau de bord.
+
+make_bact_fig() et son graphique en barres/ligne sont supprimes (code mort). Les constantes de theme
+  (_card_bg, _card_border, _muted) sont remontees pres du haut du fichier pour etre disponibles
+  avant leur premier usage.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.2.1 (2026-09-03)
 
 

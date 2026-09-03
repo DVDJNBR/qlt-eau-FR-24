@@ -1,6 +1,43 @@
 # CHANGELOG
 
 
+## v1.10.0 (2026-09-03)
+
+### Bug Fixes
+
+- **ui**: Logo - collier de jonction + goutte unique nette
+  ([`2f700de`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/2f700de12e7853a510f00ba7d3b3505924de9d4c))
+
+Reference envoyee : segment de tuyau avec collier de jonction (bague + rivet) puis une goutte d'eau
+  unique qui tombe avec un espace net sous l'embout. Remplace le filet d'eau/goutte secondaire par
+  ce motif plus simple et plus lisible a petite taille.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+### Features
+
+- **dashboard**: Nouveau graphique zones/statut mensuel façon segments de tuyau
+  ([`f7f6553`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/f7f6553dd10e21e4f2f86aede8976b1b839a85a8))
+
+- Nouveau graphique : barres empilées Conforme/Vigilance/Alerte par mois (mêmes seuils que les KPI),
+  en bas du panneau graphiques. Coins arrondis + liseré entre segments pour une lecture façon coupe
+  de tuyauterie empilée (chaque statut = un raccord posé sur l'autre). Donnée dérivée de
+  df_agg_dept/df_agg_commune existants, pas de nouvelle source. - STATUS_COLORS ajouté près de
+  PARAM_COLORS/BACT_COLORS (mêmes teintes que les cartes KPI Conforme/Vigilance/Alerte, adaptées
+  dark/light).
+
+Tentative de fill en dégradé ("waterflow") sur la ligne de conformité via fillgradient : abandonnée
+  après test, le rendu est invisible dans le plotly.js embarqué par Streamlit avec fill="tozeroy" +
+  yaxis à plage restreinte (le dégradé s'étire jusqu'à 0%, donc la fenêtre visible ne voit que la
+  toute fin, transparente). Fill plein conservé.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.9.1 (2026-09-03)
 
 ### Bug Fixes

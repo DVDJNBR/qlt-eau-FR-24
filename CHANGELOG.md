@@ -1,6 +1,31 @@
 # CHANGELOG
 
 
+## v1.8.3 (2026-09-03)
+
+### Bug Fixes
+
+- **ui**: Logo carre/compact + toggle gris discret avec icones SVG soleil/lune
+  ([`0406eb2`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/0406eb2a63b7dcdcd2c428f9cfb14834d0e82704))
+
+- Logo : proportions revues, plus large et beaucoup plus court (rect 6x7 + embout 6x10 au lieu d'une
+  longue barre fine) - plus carre, se lit clairement comme un raccord de tuyauterie et non comme une
+  forme allongee ambigue. - Toggle dark mode : remplace l'emoji lune par deux icones SVG (soleil a
+  gauche, lune a droite) injectees en CSS ::before/::after (data URI), purement decoratives -
+  n'interferent jamais avec le clic du widget. Piste de soleil/switch/lune en un seul st.container
+  flex abandonnee : ca cassait le clic du widget reel (checked restait bloque sur son etat initial
+  malgre des clics visibles). Switch repasse en gris neutre (#8b95a1), plus de bleu.
+
+Verification : le clic ne fonctionnait pas via l'outil d'automatisation (dispatch d'un seul
+  evenement "click" via CDP), mais fonctionne normalement pour un vrai clic utilisateur (sequence
+  mousedown+mouseup+ click) - confirme en dispatchant cette sequence via JS directement, le theme
+  bascule correctement.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.8.2 (2026-09-03)
 
 ### Bug Fixes

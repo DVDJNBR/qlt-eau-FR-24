@@ -347,28 +347,12 @@ selected_month_label = st.session_state["selected_month_label"] or "Janvier"
 selected_month = next(k for k, v in MOIS_LABELS.items() if v == selected_month_label)
 
 # --- Header ---
-# Le kicker "Suivi qualité de l'eau potable" vit déjà dans la bannière native
-# (overlay plus haut) : pas de doublon ici, juste l'icône + le titre dynamique
-# (qui ne peut pas aller dans st.logo, image statique uniquement).
+# Le logo + le kicker "Suivi qualité de l'eau potable" vivent déjà dans la
+# bannière native (overlay plus haut) : plus besoin de les répéter ici avec
+# un gros bloc icône+titre. Juste une petite ligne de contexte/source, comme
+# sur nyc-taxi.dvdjnbr.fr.
 scope_text = "France" if st.session_state.view_level == "National" else dept_names.get(st.session_state.selected_dept_code, "Département")
-
-st.markdown(f"""
-    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-        <div style="flex-shrink: 0; width: 52px; height: 52px; border-radius: 14px;
-                    background: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
-                    display: flex; align-items: center; justify-content: center;
-                    box-shadow: 0 4px 14px rgba(37,99,235,0.35);">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="6" y="7" width="6" height="7" rx="1" fill="#ffffff"/>
-                <rect x="11.5" y="5.5" width="6" height="10" rx="3" fill="#ffffff"/>
-                <ellipse cx="14.5" cy="10.5" rx="1.3" ry="2.6" fill="#2563EB"/>
-                <path d="M14.5 15.5C14.5 15.5 11.7 19 11.7 21C11.7 22.6 12.9 23.8 14.5 23.8C16.1 23.8 17.3 22.6 17.3 21C17.3 19 14.5 15.5 14.5 15.5Z" fill="#ffffff"/>
-                <path d="M13.1 21.2C13.1 20.3 13.6 19.6 14.3 19.6" stroke="#60A5FA" stroke-width="0.9" stroke-linecap="round"/>
-            </svg>
-        </div>
-        <h1 style="margin: 0; padding: 0; font-size: 2.15rem; font-weight: 800; line-height: 1.25; letter-spacing: -0.02em; background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{scope_text} <span style="opacity: 0.55;">· 2024</span></h1>
-    </div>
-""", unsafe_allow_html=True)
+st.caption(f"{scope_text} · 2024 · Source : Hub'Eau API")
 
 # Toggle dark mode : widget seul (pas de container/markdown à côté — ça
 # cassait le clic, cf. commentaire CSS plus haut). Soleil/lune en CSS
@@ -502,54 +486,7 @@ with tab_dashboard:
             (df_agg_commune["code_departement"] == dept_code)
         ]
 
-    # --- KPIs : 2 métriques + 3 blocs colorés ---
-    nb_zones    = len(df_m)
-    mean_rate   = df_m["compliance_rate"].mean() if not df_m.empty else 0
-    nb_conforme  = len(df_m[df_m["compliance_rate"] >= 95])
-    nb_vigilance = len(df_m[(df_m["compliance_rate"] >= 80) & (df_m["compliance_rate"] < 95)])
-    nb_alerte    = len(df_m[df_m["compliance_rate"] < 80])
-
-    c1, c2, c3, c4, c5 = st.columns(5)
-    with c1:
-        st.markdown(f"""
-            <div style="background:{_card_bg};border:1px solid {_card_border};padding:15px;border-radius:12px;
-                        height:150px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center">
-                <div style="font-size:0.8rem;color:{_muted};margin-bottom:6px">Zones</div>
-                <div style="font-size:2rem;font-weight:700;color:{PLOTLY_FONT_COLOR};line-height:1">{nb_zones}</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with c2:
-        with st.container(key="gauge_card"):
-            st.caption("Conformité")
-            st.plotly_chart(
-                make_gauge_fig(mean_rate),
-                use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
-            )
-
-    if _dark:
-        KPI_CARDS = [
-            (c3, "Conforme ≥95%",    nb_conforme,  "#0a1f14", "#1e4030", "#32ff7e", "#a0aec0"),
-            (c4, "Vigilance 80–95%", nb_vigilance, "#1a1500", "#3a3000", "#ffaf40", "#a0aec0"),
-            (c5, "Alerte &lt;80%",   nb_alerte,    "#1a0808", "#3a1515", "#ff4d4d", "#a0aec0"),
-        ]
-    else:
-        KPI_CARDS = [
-            (c3, "Conforme ≥95%",    nb_conforme,  "#f0fff4", "#9ae6b4", "#276749", "#4a5568"),
-            (c4, "Vigilance 80–95%", nb_vigilance, "#fffaf0", "#fbd38d", "#c05621", "#4a5568"),
-            (c5, "Alerte &lt;80%",   nb_alerte,    "#fff5f5", "#fed7d7", "#c53030", "#4a5568"),
-        ]
-    for col, label, count, bg, border, color, label_color in KPI_CARDS:
-        with col:
-            st.markdown(f"""
-                <div style="background:{bg};border:1px solid {border};padding:15px;border-radius:12px;
-                            height:150px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center">
-                    <div style="font-size:0.8rem;color:{label_color};margin-bottom:6px">{label}</div>
-                    <div style="font-size:2rem;font-weight:700;color:{color};line-height:1">{count}</div>
-                </div>
-            """, unsafe_allow_html=True)
-
-    # --- Recherche (sous les KPIs) ---
-    st.markdown("<div style='margin-top:14px'></div>", unsafe_allow_html=True)
+    # --- Recherche (tout en haut) ---
     st.caption("Rechercher par")
     sr_dept, sr_commune, sr_reset = st.columns([6, 6, 2])
 
@@ -586,6 +523,66 @@ with tab_dashboard:
         )
 
     st.divider()
+
+    # --- KPIs : calculs (rendu plus bas, dans la colonne à droite de la carte) ---
+    nb_zones    = len(df_m)
+    mean_rate   = df_m["compliance_rate"].mean() if not df_m.empty else 0
+    nb_conforme  = len(df_m[df_m["compliance_rate"] >= 95])
+    nb_vigilance = len(df_m[(df_m["compliance_rate"] >= 80) & (df_m["compliance_rate"] < 95)])
+    nb_alerte    = len(df_m[df_m["compliance_rate"] < 80])
+
+    # --- Paramètres physico-chimiques / bactériologiques : calculs (le statut
+    # bactério est rendu dans la colonne KPI, le graphique physico-chimique
+    # tout en bas avec les autres graphiques) ---
+    PARAM_COLORS = {
+        "Nitrates":        "#f97316",
+        "Nitrites":        "#ef4444",
+        "Trihalométhanes": "#a855f7",
+        "Turbidité":       "#06b6d4",
+        "Fluorures":       "#84cc16",
+    }
+    BACT_COLORS = {
+        "E. coli":      "#f87171",
+        "Entérocoques": "#fb923c",
+    }
+    MOIS_SHORT = [MOIS_LABELS[m][:3] for m in range(1, 13)]
+
+    def get_params_scope(df_dept, df_commune):
+        """Retourne (df_pct, df_bact) selon la vue courante."""
+        if search_commune:
+            commune_code = commune_name_to_code.get(search_commune)
+            if commune_code:
+                src = df_commune[df_commune["code_commune"] == commune_code]
+            else:
+                src = pd.DataFrame()
+        elif st.session_state.view_level == "Department" and dept_code:
+            src = df_dept[df_dept["code_departement"] == dept_code]
+        else:
+            # National : médiane des depts par mois × paramètre
+            if df_dept.empty:
+                return pd.DataFrame(), pd.DataFrame()
+            src = df_dept.groupby(
+                ["mois", "code_parametre", "nom_parametre", "type", "limite"]
+            ).agg(
+                valeur_mediane=("valeur_mediane", "median"),
+                pct_limite=("pct_limite", "median"),
+            ).reset_index()
+
+        if src.empty:
+            return pd.DataFrame(), pd.DataFrame()
+
+        df_pct  = src[src["type"] == "pct"]
+        df_bact = src[src["type"] == "count"]
+        return df_pct, df_bact
+
+    if search_commune:
+        params_label = search_commune
+    elif st.session_state.view_level == "Department" and dept_code:
+        params_label = dept_names.get(dept_code, dept_code)
+    else:
+        params_label = "France"
+
+    df_pct, df_bact = get_params_scope(df_params_dept, df_params_commune)
 
     # ============================================================
     # MOIS (empilés verticalement) + CARTE
@@ -631,7 +628,7 @@ with tab_dashboard:
         ]
         return {"type": "FeatureCollection", "features": features}
 
-    col_months, col_map = st.columns([1.4, 8.6], gap="medium")
+    col_months, col_map, col_kpi = st.columns([1.1, 6.4, 2.5], gap="medium")
 
     with col_months:
         st.pills(
@@ -639,6 +636,67 @@ with tab_dashboard:
             key="selected_month_label",
             label_visibility="collapsed",
         )
+
+    with col_kpi:
+        st.markdown(f"""
+            <div style="background:{_card_bg};border:1px solid {_card_border};padding:10px 14px;border-radius:12px;
+                        display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:0.8rem;color:{_muted}">Zones</span>
+                <span style="font-size:1.3rem;font-weight:700;color:{PLOTLY_FONT_COLOR}">{nb_zones}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+        with st.container(key="gauge_card"):
+            st.caption("Conformité")
+            st.plotly_chart(
+                make_gauge_fig(mean_rate),
+                use_container_width=True, config={"displayModeBar": False}, key="gauge_conformite",
+            )
+
+        if _dark:
+            KPI_ROWS = [
+                ("Conforme ≥95%",    nb_conforme,  "#0a1f14", "#1e4030", "#32ff7e"),
+                ("Vigilance 80–95%", nb_vigilance, "#1a1500", "#3a3000", "#ffaf40"),
+                ("Alerte <80%",      nb_alerte,    "#1a0808", "#3a1515", "#ff4d4d"),
+            ]
+        else:
+            KPI_ROWS = [
+                ("Conforme ≥95%",    nb_conforme,  "#f0fff4", "#9ae6b4", "#276749"),
+                ("Vigilance 80–95%", nb_vigilance, "#fffaf0", "#fbd38d", "#c05621"),
+                ("Alerte <80%",      nb_alerte,    "#fff5f5", "#fed7d7", "#c53030"),
+            ]
+        for label, count, bg, border, color in KPI_ROWS:
+            st.markdown(f"""
+                <div style="background:{bg};border:1px solid {border};padding:10px 14px;border-radius:12px;
+                            display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                    <span style="font-size:0.8rem;color:{_muted}">{label}</span>
+                    <span style="font-size:1.3rem;font-weight:700;color:{color}">{count}</span>
+                </div>
+            """, unsafe_allow_html=True)
+
+        # Statut bactériologique, intégré dans la colonne KPI
+        _has_detections = bool(not df_bact.empty and df_bact["valeur_mediane"].sum() > 0)
+        if _has_detections:
+            _bact_bg, _bact_border, _bact_accent = ("#1a0808", "#3a1515", "#ff4d4d") if _dark else ("#fff5f5", "#fed7d7", "#c53030")
+            _bact_total = int(df_bact["valeur_mediane"].sum())
+            _bact_detail = " · ".join(
+                f"{nom} : {int(df_bact[df_bact['nom_parametre'] == nom]['valeur_mediane'].sum())}"
+                for nom in BACT_COLORS
+                if not df_bact[df_bact["nom_parametre"] == nom].empty
+            )
+        else:
+            _bact_bg, _bact_border, _bact_accent = ("#0a1f14", "#1e4030", "#32ff7e") if _dark else ("#f0fff4", "#9ae6b4", "#276749")
+            _bact_total, _bact_detail = 0, "E. coli · Entérocoques — RAS"
+
+        st.markdown(_md_html(f"""
+            <div style="background:{_bact_bg}; border:1px solid {_bact_border}; border-radius:12px; padding:12px 14px;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-size:0.8rem; color:{_muted};">Bactério.</span>
+                    <span style="font-size:1.3rem; font-weight:700; color:{_bact_accent};">{_bact_total}</span>
+                </div>
+                <div style="font-size:0.7rem; color:{_bact_accent}; margin-top:4px;">{_bact_detail}</div>
+            </div>
+        """), unsafe_allow_html=True)
 
     with col_map:
         if st.session_state.view_level == "National":
@@ -879,51 +937,9 @@ with tab_dashboard:
     st.divider()
 
     # ============================================================
-    # PANNEAU PARAMÈTRES : niveaux réels de prélèvement
+    # GRAPHIQUES : niveaux physico-chimiques (PARAM_COLORS, MOIS_SHORT,
+    # df_pct et params_label déjà calculés plus haut, avant la carte)
     # ============================================================
-
-    PARAM_COLORS = {
-        "Nitrates":        "#f97316",
-        "Nitrites":        "#ef4444",
-        "Trihalométhanes": "#a855f7",
-        "Turbidité":       "#06b6d4",
-        "Fluorures":       "#84cc16",
-    }
-    BACT_COLORS = {
-        "E. coli":      "#f87171",
-        "Entérocoques": "#fb923c",
-    }
-    MOIS_SHORT = [MOIS_LABELS[m][:3] for m in range(1, 13)]
-
-
-    def get_params_scope(df_dept, df_commune):
-        """Retourne (df_pct, df_bact) selon la vue courante."""
-        if search_commune:
-            commune_code = commune_name_to_code.get(search_commune)
-            if commune_code:
-                src = df_commune[df_commune["code_commune"] == commune_code]
-            else:
-                src = pd.DataFrame()
-        elif st.session_state.view_level == "Department" and dept_code:
-            src = df_dept[df_dept["code_departement"] == dept_code]
-        else:
-            # National : médiane des depts par mois × paramètre
-            if df_dept.empty:
-                return pd.DataFrame(), pd.DataFrame()
-            src = df_dept.groupby(
-                ["mois", "code_parametre", "nom_parametre", "type", "limite"]
-            ).agg(
-                valeur_mediane=("valeur_mediane", "median"),
-                pct_limite=("pct_limite", "median"),
-            ).reset_index()
-
-        if src.empty:
-            return pd.DataFrame(), pd.DataFrame()
-
-        df_pct  = src[src["type"] == "pct"]
-        df_bact = src[src["type"] == "count"]
-        return df_pct, df_bact
-
 
     def make_params_fig(df_pct, scope_label):
         """Multi-lignes % de la limite légale pour les paramètres physico-chimiques."""
@@ -975,47 +991,11 @@ with tab_dashboard:
         return fig
 
 
-    # Scope label
-    if search_commune:
-        params_label = search_commune
-    elif st.session_state.view_level == "Department" and dept_code:
-        params_label = dept_names.get(dept_code, dept_code)
+    if df_pct.empty:
+        st.info("Aucune donnée de paramètres physico-chimiques disponible pour cette sélection.")
     else:
-        params_label = "France"
-
-    df_pct, df_bact = get_params_scope(df_params_dept, df_params_commune)
-
-    if df_pct.empty and df_bact.empty:
-        st.info("Aucune donnée de paramètres disponible pour cette sélection.")
-    else:
-        col_pct, col_bact = st.columns([3, 2])
-        with col_pct:
-            if not df_pct.empty:
-                st.plotly_chart(
-                    make_params_fig(df_pct, params_label),
-                    use_container_width=True, config={"displayModeBar": False},
-                )
-        with col_bact:
-            _has_detections = bool(not df_bact.empty and df_bact["valeur_mediane"].sum() > 0)
-            if _has_detections:
-                _bg, _border, _accent = ("#1a0808", "#3a1515", "#ff4d4d") if _dark else ("#fff5f5", "#fed7d7", "#c53030")
-                _total = int(df_bact["valeur_mediane"].sum())
-                _breakdown = " · ".join(
-                    f"{nom} : {int(df_bact[df_bact['nom_parametre'] == nom]['valeur_mediane'].sum())}"
-                    for nom in BACT_COLORS
-                    if not df_bact[df_bact["nom_parametre"] == nom].empty
-                )
-            else:
-                _bg, _border, _accent = ("#0a1f14", "#1e4030", "#32ff7e") if _dark else ("#f0fff4", "#9ae6b4", "#276749")
-                _total, _breakdown = 0, "E. coli · Entérocoques — RAS"
-
-            st.markdown(_md_html(f"""
-                <div style="background:{_bg}; border:2px solid {_accent}; border-radius:12px; padding:20px;
-                            height:220px; display:flex; flex-direction:column; justify-content:center;
-                            align-items:center; text-align:center;">
-                    <div style="font-size:0.85rem; color:{_muted}; margin-bottom:6px;">Détections bactériologiques — {params_label}</div>
-                    <div style="font-size:2.6rem; font-weight:800; color:{_accent}; line-height:1;">{_total}</div>
-                    <div style="font-size:0.8rem; color:{_accent}; margin-top:8px;">{_breakdown}</div>
-                </div>
-            """), unsafe_allow_html=True)
+        st.plotly_chart(
+            make_params_fig(df_pct, params_label),
+            use_container_width=True, config={"displayModeBar": False},
+        )
 

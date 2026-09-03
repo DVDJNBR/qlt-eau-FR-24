@@ -126,11 +126,6 @@ if "dark_mode"            not in st.session_state: st.session_state.dark_mode   
 # Thème courant
 _dark            = st.session_state.get("dark_mode", False)
 PLOTLY_TEMPLATE  = "plotly_dark" if _dark else "plotly"
-# carto-* nécessite désormais une clé API. white-bg est le seul style Plotly
-# sans tuile qui ne nécessite pas de token Mapbox (un style JSON personnalisé,
-# même sans source, déclenche quand même l'exigence de token de mapbox-gl-js).
-# Le fond blanc en dark mode est atténué en CSS (carte encadrée) plus bas.
-MAP_STYLE = "white-bg"
 PLOTLY_FONT_COLOR = "#e2e8f0" if _dark else "#1a202c"
 
 def make_gauge_fig(value):
@@ -166,13 +161,19 @@ def make_gauge_fig(value):
 _CSS_COMMON = """
     /* Largeur max */
     .block-container { max-width: 1400px !important; padding-left: 2rem !important; padding-right: 2rem !important; }
-    /* Sélecteur de mois : pills empilés verticalement à gauche de la carte */
+    /* Sélecteur de mois : pills empilés verticalement, étirés sur toute la
+       hauteur de la carte à droite (espacement égal plutôt qu'un petit gap fixe). */
+    .st-key-selected_month_label, .st-key-selected_month_label > div {
+        height: 100% !important;
+    }
     .st-key-selected_month_label div[data-testid="stButtonGroup"] {
         display: flex !important; flex-direction: column !important;
-        align-items: stretch !important; gap: 6px !important; width: 100% !important;
+        align-items: stretch !important; justify-content: space-between !important;
+        height: 100% !important; width: 100% !important;
     }
     .st-key-selected_month_label div[data-testid="stButtonGroup"] > div {
-        display: flex !important; flex-direction: column !important; width: 100% !important;
+        display: flex !important; flex-direction: column !important;
+        justify-content: space-between !important; height: 100% !important; width: 100% !important;
     }
     .st-key-selected_month_label button[data-variant="pills"] {
         width: 100% !important; justify-content: center !important;
@@ -202,6 +203,17 @@ if _dark:
             background-color: #151921 !important; color: #e2e8f0 !important;
         }}
         [data-baseweb="menu"] li:hover {{ background-color: #232a35 !important; }}
+        /* Popup des selectbox (département/commune) : rendu dans un portail attaché
+           à <body>, hors de portée du CSS scopé à .stApp — cible directe requise. */
+        [data-testid="stSelectboxVirtualDropdown"] {{
+            background-color: #151921 !important;
+        }}
+        [data-testid="stSelectboxVirtualDropdown"] [role="option"] {{
+            color: #e2e8f0 !important;
+        }}
+        [data-testid="stSelectboxVirtualDropdown"] [role="option"]:hover {{
+            background-color: #232a35 !important;
+        }}
         /* Pills dark */
         button[data-variant="pills"] {{
             background-color: #1e2530 !important; color: #e2e8f0 !important; border-color: #232a35 !important;
@@ -222,9 +234,8 @@ if _dark:
         }}
         hr {{ border-color: #232a35 !important; }}
         label, p, h1, h2, h3, .stMarkdown, .stCaption {{ color: #e2e8f0 !important; }}
-        /* Carte encadrée : white-bg (seul style mapbox sans clé) reste blanc,
-           on l'entoure d'une bordure/coins arrondis sombres plutôt que de le
-           laisser bord-à-bord sur le fond noir de la page. */
+        /* Carte encadrée : bordure/coins arrondis sombres autour de chaque
+           graphique Plotly plutôt qu'un rendu bord-à-bord. */
         [data-testid="stPlotlyChart"] {{
             background: #151921; border: 1px solid #232a35; border-radius: 12px;
             padding: 10px; overflow: hidden;
@@ -394,7 +405,7 @@ def coloraxis_config():
         ),
     )
 
-def common_mapbox_layout():
+def common_map_layout():
     return dict(
         margin={"r": 0, "t": 0, "l": 0, "b": 0},
         paper_bgcolor="rgba(0,0,0,0)",
@@ -402,26 +413,28 @@ def common_mapbox_layout():
         showlegend=False,
     )
 
+def geo_config(**overrides):
+    """Config geo commune : traces Choropleth pures (pas de mapbox/tuiles, donc pas
+    de clé API ni de dépendance à un fournisseur tiers). Fond transparent — hérite
+    de la couleur de la carte (.stPlotlyChart) posée en CSS, dark ou light."""
+    cfg = dict(
+        bgcolor="rgba(0,0,0,0)",
+        showland=False, showcountries=False, showframe=False,
+        showcoastlines=False, showsubunits=False, showocean=False, showlakes=False,
+        projection_type="mercator",
+        fitbounds="locations",
+    )
+    cfg.update(overrides)
+    return cfg
+
 @st.cache_resource
 def get_dept_commune_geo(dept: str):
-    """Sous-ensemble GeoJSON + centroïde d'un département (35k features filtrées une seule fois)."""
+    """Sous-ensemble GeoJSON communes d'un département (35k features filtrées une seule fois)."""
     features = [
         f for f in geojson_commune_all["features"]
         if f["properties"]["code"].startswith(dept)
     ]
-    all_coords = []
-    for feat in features:
-        geom = feat["geometry"]
-        if geom is None:
-            continue
-        if geom["type"] == "Polygon":
-            all_coords.extend(geom["coordinates"][0])
-        elif geom["type"] == "MultiPolygon":
-            for poly in geom["coordinates"]:
-                all_coords.extend(poly[0])
-    center_lon = sum(c[0] for c in all_coords) / len(all_coords) if all_coords else 2.5
-    center_lat = sum(c[1] for c in all_coords) / len(all_coords) if all_coords else 46.5
-    return {"type": "FeatureCollection", "features": features}, center_lat, center_lon
+    return {"type": "FeatureCollection", "features": features}
 
 col_months, col_map = st.columns([1.4, 8.6], gap="medium")
 
@@ -439,7 +452,7 @@ with col_map:
 
         df_metro = df_m[~df_m["code_departement"].isin(DOMTOM_CODES)]
 
-        fig.add_trace(go.Choroplethmapbox(
+        fig.add_trace(go.Choropleth(
             geojson=geojson_dept,
             locations=df_metro["code_departement"],
             z=df_metro["compliance_rate"],
@@ -450,21 +463,21 @@ with col_map:
             marker_opacity=0.8,
             marker_line_width=0.5,
             marker_line_color="#1e2530",
-            subplot="mapbox",
+            geo="geo",
         ))
 
         for i, (code, name, lat, lon, zoom, x_dom) in enumerate(DOM_TOM_CONFIG):
             feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == code]
             if not feat:
                 continue
-            geo  = {"type": "FeatureCollection", "features": feat}
+            geo_ft = {"type": "FeatureCollection", "features": feat}
             df_t = df_m[df_m["code_departement"] == code]
             locs  = df_t["code_departement"] if not df_t.empty else pd.Series(dtype=str)
             zvals = df_t["compliance_rate"]   if not df_t.empty else pd.Series(dtype=float)
             texts = [name] * len(df_t)        if not df_t.empty else []
 
-            fig.add_trace(go.Choroplethmapbox(
-                geojson=geo, locations=locs, z=zvals,
+            fig.add_trace(go.Choropleth(
+                geojson=geo_ft, locations=locs, z=zvals,
                 featureidkey="properties.code",
                 coloraxis="coloraxis",
                 text=texts,
@@ -472,12 +485,9 @@ with col_map:
                 marker_opacity=0.8,
                 marker_line_width=0.5,
                 marker_line_color="#1e2530",
-                subplot=f"mapbox{i+2}",
+                geo=f"geo{i+2}",
             ))
-            fig.update_layout(**{f"mapbox{i+2}": dict(
-                style=MAP_STYLE,
-                center={"lat": lat, "lon": lon},
-                zoom=zoom,
+            fig.update_layout(**{f"geo{i+2}": geo_config(
                 domain={"x": x_dom, "y": [0.01, 0.22]},
             )})
 
@@ -492,13 +502,8 @@ with col_map:
             )
 
         fig.update_layout(
-            **common_mapbox_layout(),
-            mapbox=dict(
-                style=MAP_STYLE,
-                center={"lat": 46.5, "lon": 2.5},
-                zoom=4.8, pitch=40,
-                domain={"x": [0, 1], "y": [0.25, 1.0]},
-            ),
+            **common_map_layout(),
+            geo=geo_config(domain={"x": [0, 1], "y": [0.25, 1.0]}),
             coloraxis=coloraxis_config(),
             height=680,
         )
@@ -516,15 +521,13 @@ with col_map:
 
     elif is_domtom:
         # ── Drill-down DOM-TOM : pas de GeoJSON communes → affichage département
-        dt_map = {c: (lat, lon, zoom) for c, _, lat, lon, zoom, _ in DOM_TOM_CONFIG}
-        lat, lon, zoom = dt_map[dept_code]
         feat = [f for f in geojson_domtom["features"] if f["properties"]["code"] == dept_code]
-        geo  = {"type": "FeatureCollection", "features": feat}
+        geo_ft = {"type": "FeatureCollection", "features": feat}
         df_d = df_agg_dept[(df_agg_dept["mois"] == selected_month) &
                            (df_agg_dept["code_departement"] == dept_code)]
 
-        fig = go.Figure(go.Choroplethmapbox(
-            geojson=geo,
+        fig = go.Figure(go.Choropleth(
+            geojson=geo_ft,
             locations=df_d["code_departement"] if not df_d.empty else pd.Series(dtype=str),
             z=df_d["compliance_rate"]           if not df_d.empty else pd.Series(dtype=float),
             featureidkey="properties.code",
@@ -534,8 +537,8 @@ with col_map:
             marker_opacity=0.8,
         ))
         fig.update_layout(
-            **common_mapbox_layout(),
-            mapbox=dict(style=MAP_STYLE, center={"lat": lat, "lon": lon}, zoom=zoom),
+            **common_map_layout(),
+            geo=geo_config(),
             coloraxis=coloraxis_config(),
             height=580,
         )
@@ -544,9 +547,9 @@ with col_map:
 
     else:
         # ── Drill-down département (métropole) : niveau commune ──────────
-        geo_local, center_lat, center_lon = get_dept_commune_geo(dept_code)
+        geo_local = get_dept_commune_geo(dept_code)
 
-        fig = go.Figure(go.Choroplethmapbox(
+        fig = go.Figure(go.Choropleth(
             geojson=geo_local,
             locations=df_m["code_commune"],
             z=df_m["compliance_rate"],
@@ -559,9 +562,8 @@ with col_map:
             marker_line_color="#1e2530",
         ))
         fig.update_layout(
-            **common_mapbox_layout(),
-            mapbox=dict(style=MAP_STYLE,
-                        center={"lat": center_lat, "lon": center_lon}, zoom=7.5),
+            **common_map_layout(),
+            geo=geo_config(),
             coloraxis=coloraxis_config(),
             height=580,
         )

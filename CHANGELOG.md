@@ -1,7 +1,34 @@
 # CHANGELOG
 
 
+## v1.2.1 (2026-09-03)
+
+
 ## v1.2.0 (2026-09-03)
+
+### Bug Fixes
+
+- **dark-mode**: Carte 100% sans mapbox + popup dropdown + mois pleine hauteur
+  ([`8aaf410`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/8aaf410ca8836a19628157d7ed0be021e0bea4d4))
+
+- Migration Choroplethmapbox -> Choropleth (go.Choropleth, layout geo au lieu de mapbox). Elimine
+  definitivement la dependance a un fournisseur de tuiles (Carto, puis white-bg de secours) : plus
+  de fond blanc en dark mode, plus jamais de risque qu'un tiers exige une cle API un jour.
+  fitbounds="locations" remplace le calcul manuel de centroide/zoom (get_dept_commune_geo simplifiee
+  en consequence). Perte du pitch 3D sur la carte nationale (les traces geo sont plates, pas de
+  mapbox-gl) : compromis assume pour un fond de carte fiable. - Popup des selectbox
+  (departement/commune) : rendu dans un portail attache a <body>
+  (data-testid="stSelectboxVirtualDropdown"), hors de portee du CSS scope a .stApp -> restait blanc
+  en dark mode malgre le fix precedent sur le select ferme. Cible directe du portail. - Pills des
+  mois : espacement egal (justify-content: space-between) sur toute la hauteur de la carte au lieu
+  d'un gap fixe qui laissait un grand vide sous les 12 boutons.
+
+Non testable en local : les inserts DOM-TOM (le jeu de donnees local n'a aucune ligne pour
+  971/972/973/974/976) - a verifier une fois deploye.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
 
 ### Features
 

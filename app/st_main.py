@@ -137,6 +137,20 @@ _card_bg     = "#151921" if _dark else "#f8fafc"
 _card_border = "#232a35" if _dark else "#e2e8f0"
 _muted       = "#94a3b8" if _dark else "#64748b"
 
+# Habillage de la bande d'en-tête native de Streamlit (celle du menu ⋮),
+# vide à droite du logo st.logo(). Pas d'API officielle pour y injecter du
+# contenu : overlay en position fixe, calé sur la hauteur réelle du header
+# (60px) et au-dessus de son z-index (999990). Purement visuel, non cliquable.
+st.markdown(f"""
+    <div style="position:fixed; top:0; left:65px; height:60px; z-index:1000000;
+                display:flex; align-items:center; pointer-events:none;">
+        <span style="font-size:0.68rem; font-weight:700; letter-spacing:0.12em;
+                     color:{_muted}; text-transform:uppercase;">
+            Suivi qualité de l'eau potable
+        </span>
+    </div>
+""", unsafe_allow_html=True)
+
 def make_gauge_fig(value):
     """Manomètre de conformité (esthétique tuyauterie/pression)."""
     needle_color = "#e2e8f0" if _dark else "#1a202c"

@@ -113,17 +113,28 @@ if "dark_mode"            not in st.session_state: st.session_state.dark_mode   
 # Thème courant
 _dark            = st.session_state.get("dark_mode", False)
 PLOTLY_TEMPLATE  = "plotly_dark" if _dark else "plotly"
-MAP_STYLE        = "white-bg"  # carto-* nécessite désormais une clé API
+# carto-* nécessite désormais une clé API : en clair on garde white-bg (aucune tuile,
+# aucune clé) ; en sombre on fournit un style Mapbox minimal (un calque "background"
+# sans aucune source) — même principe (pas de tuile chargée) mais couleur foncée.
+MAP_STYLE = (
+    {"version": 8, "sources": {}, "layers": [
+        {"id": "background", "type": "background", "paint": {"background-color": "#0b0d11"}}
+    ]}
+    if _dark else "white-bg"
+)
 PLOTLY_FONT_COLOR = "#e2e8f0" if _dark else "#1a202c"
 
 # Injection CSS adaptative
+# NB : depuis Streamlit ~1.56 les boutons pills n'ont plus de data-testid
+# "stBaseButton-pills(Active)" — on cible button[data-variant="pills"] et
+# l'état sélectionné via aria-checked.
 _CSS_COMMON = """
     /* Largeur max */
     .block-container { max-width: 1200px !important; padding-left: 2rem !important; padding-right: 2rem !important; }
     /* Centrer les Pills Streamlit */
     div[data-testid="stButtonGroup"] { width: 100% !important; }
     div[data-testid="stButtonGroup"] > div { display: flex !important; justify-content: center !important; flex-wrap: wrap !important; margin: 0 auto !important; gap: 6px !important; }
-    button[data-testid="stBaseButton-pills"], button[data-testid="stBaseButton-pillsActive"] { flex: 1 1 auto !important; justify-content: center !important; }
+    button[data-variant="pills"] { flex: 1 1 auto !important; justify-content: center !important; }
 """
 
 if _dark:
@@ -136,25 +147,28 @@ if _dark:
             background-color: #0b0d11 !important; color: #e2e8f0 !important;
         }}
         .stMetric {{ background-color: #151921; border: 1px solid #232a35; padding: 15px; border-radius: 12px; }}
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {{ color: #e2e8f0 !important; }}
         /* BaseUI widgets (selectbox, input) */
         [data-baseweb="select"] > div, [data-baseweb="input"] > div,
         [data-baseweb="base-input"], [data-baseweb="textarea"] {{
             background-color: #151921 !important; color: #e2e8f0 !important; border-color: #232a35 !important;
         }}
+        [data-baseweb="select"] svg {{ fill: #e2e8f0 !important; }}
         [data-baseweb="menu"], [data-baseweb="popover"] > div {{
             background-color: #151921 !important; color: #e2e8f0 !important;
         }}
         [data-baseweb="menu"] li:hover {{ background-color: #232a35 !important; }}
         /* Pills dark */
-        button[data-testid="stBaseButton-pills"] {{
+        button[data-variant="pills"] {{
             background-color: #1e2530 !important; color: #e2e8f0 !important; border-color: #232a35 !important;
         }}
-        button[data-testid="stBaseButton-pillsActive"] {{
-            background-color: #3b82f6 !important; color: #ffffff !important; border-color: #3b82f6 !important;
-        }}
-        button[data-testid="stBaseButton-pills"]:hover {{
+        button[data-variant="pills"]:hover {{
             background-color: #232a35 !important;
         }}
+        button[data-variant="pills"][aria-checked="true"] {{
+            background-color: #3b82f6 !important; color: #ffffff !important; border-color: #3b82f6 !important;
+        }}
+        button[data-variant="pills"] p {{ color: inherit !important; }}
         /* st.button (retour, etc.) dark */
         .stButton > button {{
             background-color: #1e2530 !important; color: #e2e8f0 !important; border-color: #232a35 !important;
@@ -162,8 +176,8 @@ if _dark:
         .stButton > button:disabled {{
             background-color: #13181f !important; color: #4a5568 !important;
         }}
+        hr {{ border-color: #232a35 !important; }}
         label, p, h1, h2, h3, .stMarkdown, .stCaption {{ color: #e2e8f0 !important; }}
-        button[data-testid="stBaseButton-pills"] p, button[data-testid="stBaseButton-pillsActive"] p {{ color: inherit !important; }}
         </style>
     """, unsafe_allow_html=True)
 else:

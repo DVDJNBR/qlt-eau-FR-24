@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v1.13.1 (2026-09-04)
+
+### Bug Fixes
+
+- **ui**: Logo - tuyau descendu, rebord agrandi, goutte descendue
+  ([`56c31ef`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/56c31ef0699c7a950ecd9ab577cf13386ee31f29))
+
+Ajustements sur la version deja en prod (gardee comme base, plus lisible que les tentatives de
+  retracage/redesign essayees en cours de route) : le stub touche toujours le bord haut du logo mais
+  est plus long (0-13 au lieu de 0-9), ce qui pousse le rebord (le "gros bord") plus bas ; le rebord
+  lui-meme est agrandi (40x16 au lieu de 35x10, rx=1 inchange - pas plus arrondi) pour etre mieux
+  visible ; la goutte et la coche sont deplacees en consequence (translation directe des memes
+  coordonnees, forme inchangee).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.13.0 (2026-09-04)
 
 ### Features

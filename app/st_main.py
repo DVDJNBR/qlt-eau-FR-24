@@ -19,7 +19,7 @@ def _md_html(s: str) -> str:
 # --- Configuration ---
 ASSETS_DIR = Path(__file__).parent.parent / "assets"
 APP_ASSETS_DIR = Path(__file__).parent / "assets"
-st.set_page_config(page_title="Qualité de l'eau en France 2024", layout="wide", page_icon=":material/water_drop:")
+st.set_page_config(page_title="Qualité de l'eau en France 2024", layout="wide", page_icon=str(APP_ASSETS_DIR / "logo-icon.svg"))
 
 # Logo dans la barre d'en-tête native de Streamlit (au niveau du menu ⋮).
 # st.logo() n'accepte qu'une image statique, pas de HTML dynamique : le titre

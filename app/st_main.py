@@ -193,15 +193,16 @@ _CSS_COMMON = """
        grand vide au-dessus des onglets. 4.5rem (72px) laisse juste la place
        de la bannière native (60px) + une petite marge. */
     .block-container { max-width: 1400px !important; padding-left: 2rem !important; padding-right: 2rem !important; padding-top: 4.5rem !important; }
-    /* Sélecteur de mois : grille 6 colonnes x 2 rangées (une seule bande en
-       haut, à côté de la recherche, plutôt qu'une colonne étroite tout en
-       hauteur à gauche de la carte). */
+    /* Sélecteur de mois : grille 4 colonnes x 3 rangées (recherche
+       département/commune passée côte à côte au-dessus a fait gagner en
+       hauteur - les mois passent à 4 par ligne au lieu de 6 pour rester
+       dans la même largeur totale sans redevenir une bande figée). */
     .st-key-selected_month_label div[data-testid="stButtonGroup"] > div {
         display: flex !important; flex-direction: row !important; flex-wrap: wrap !important;
         gap: 6px !important;
     }
     .st-key-selected_month_label button[data-variant="pills"] {
-        flex: 0 0 calc(16.666% - 6px) !important; justify-content: center !important;
+        flex: 0 0 calc(25% - 6px) !important; justify-content: center !important;
     }
     /* Toggle thème : discret (gris, pas de bleu), repositionné dans la
        bannière native (au-dessus du z-index du header 999990). Soleil/lune
@@ -536,26 +537,30 @@ with tab_dashboard:
     col_search, col_months = st.columns([3, 9], gap="medium")
 
     with col_search:
-        search_dept = st.selectbox(
-            "Département",
-            options=list(dept_options.keys()),
-            format_func=lambda c: dept_options[c],
-            index=0,
-            placeholder="Département…",
-            key="dept_search",
-        )
-        if search_dept and search_dept != st.session_state.get("selected_dept_code"):
-            st.session_state.selected_dept_code = search_dept
-            st.session_state.view_level = "Department"
-            st.rerun()
+        sr_dept, sr_commune = st.columns(2, gap="small")
 
-        search_commune = st.selectbox(
-            "Commune",
-            options=[""] + sorted_communes,
-            index=0,
-            placeholder="Commune…",
-            key="commune_search",
-        )
+        with sr_dept:
+            search_dept = st.selectbox(
+                "Département",
+                options=list(dept_options.keys()),
+                format_func=lambda c: dept_options[c],
+                index=0,
+                placeholder="Département…",
+                key="dept_search",
+            )
+            if search_dept and search_dept != st.session_state.get("selected_dept_code"):
+                st.session_state.selected_dept_code = search_dept
+                st.session_state.view_level = "Department"
+                st.rerun()
+
+        with sr_commune:
+            search_commune = st.selectbox(
+                "Commune",
+                options=[""] + sorted_communes,
+                index=0,
+                placeholder="Commune…",
+                key="commune_search",
+            )
 
         st.button(
             "← Retour",

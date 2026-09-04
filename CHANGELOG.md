@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v1.12.1 (2026-09-04)
+
+### Bug Fixes
+
+- **ui**: Premiere passe responsiveness - overlays header + grille de mois
+  ([`2fce4d3`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/2fce4d3be11664a4fa90f925362076ae4652bbe3))
+
+- Le kicker ("Suivi qualite de l'eau potable") et le texte de scope/ source ("<departement> - 2024 -
+  Source : Hub'Eau API") sont en position fixe a des offsets pixel fixes (left:65px / left:300px)
+  calibres pour desktop. Sur un ecran etroit, la longueur variable du texte de scope (selon le
+  departement selectionne) risquait de chevaucher le menu natif Streamlit (Deploy / ⋮) ou le toggle
+  de theme a droite - purs elements decoratifs, masques via @media (max-width: 768px) plutot que de
+  risquer un chevauchement avec des elements cliquables. - Grille de mois (6 colonnes x 2 rangees) :
+  en dessous de 640px - seuil interne que Streamlit utilise deja pour empiler ses propres st.columns
+  (confirme en inspectant les regles CSS injectees par le framework) - 6 pills par rangee deviennent
+  trop etroites pour rester lisibles ; repasse a 3 colonnes (4 rangees) sous ce seuil.
+
+Note methodologique : l'environnement de test navigateur disponible dans cette session a un plancher
+  de largeur de fenetre (~1050px, un resize_window vers 390-400px ne redescend pas en dessous) qui
+  empeche de verifier visuellement le rendu a une largeur de telephone reelle. Les deux correctifs
+  ci-dessus sont bases sur l'inspection du CSS genere par Streamlit (seuil de 640px confirme dans
+  son bundle JS) et une lecture du code, pas une capture d'ecran a largeur mobile - a verifier
+  manuellement sur un vrai telephone apres deploiement.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+- **ui**: Reduit le padding lateral sous 480px
+  ([`f48ffa3`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/f48ffa30faed2a9a38794d140d1fe546050d4813))
+
+Les 2rem de marge fixe de chaque cote (32px x2) pesent proportionnellement plus sur un tres petit
+  ecran (<480px) - reduits a 1rem sous ce seuil pour rendre cette largeur au contenu.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.12.0 (2026-09-04)
 
 ### Features

@@ -295,16 +295,17 @@ if _dark:
         }}
         .stMetric {{ background-color: #151921; border: 1px solid #232a35; padding: 15px; border-radius: 12px; }}
         [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {{ color: #e2e8f0 !important; }}
-        /* BaseUI widgets (selectbox, input) */
-        [data-baseweb="select"] > div, [data-baseweb="input"] > div,
-        [data-baseweb="base-input"], [data-baseweb="textarea"] {{
+        /* Widgets selectbox/input : Streamlit a migré de BaseWeb vers
+           react-aria (comme les tabs) - [data-baseweb=...] ne matche plus
+           rien, la boîte fermée du selectbox restait donc blanche en dark
+           mode malgré ces règles (jamais appliquées). stSelectboxVirtualDropdown
+           reste valide pour le popup ouvert (portail séparé) - seule la boîte
+           fermée avait besoin d'un nouveau sélecteur. */
+        .react-aria-ComboBox > div {{
             background-color: #151921 !important; color: #e2e8f0 !important; border-color: #232a35 !important;
         }}
-        [data-baseweb="select"] svg {{ fill: #e2e8f0 !important; }}
-        [data-baseweb="menu"], [data-baseweb="popover"] > div {{
-            background-color: #151921 !important; color: #e2e8f0 !important;
-        }}
-        [data-baseweb="menu"] li:hover {{ background-color: #232a35 !important; }}
+        .react-aria-ComboBox input {{ background-color: transparent !important; color: #e2e8f0 !important; }}
+        .react-aria-ComboBox button svg {{ fill: #e2e8f0 !important; }}
         /* Popup des selectbox (département/commune) : rendu dans un portail attaché
            à <body>, hors de portée du CSS scopé à .stApp — cible directe requise. */
         [data-testid="stSelectboxVirtualDropdown"] {{

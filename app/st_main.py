@@ -147,7 +147,7 @@ _muted       = "#94a3b8" if _dark else "#64748b"
 # de scope_text plus bas (dépend du département sélectionné) — même bande,
 # deux injections successives pour éviter tout décalage d'affichage.
 st.markdown(f"""
-    <div class="header-kicker" style="position:fixed; top:0; left:65px; height:60px; z-index:1000000;
+    <div class="header-kicker" style="position:fixed; top:0; left:74px; height:60px; z-index:1000000;
                 display:flex; align-items:center; pointer-events:none;">
         <span style="font-size:0.68rem; font-weight:700; letter-spacing:0.12em;
                      color:{_muted}; text-transform:uppercase;">
@@ -229,6 +229,11 @@ _CSS_COMMON = """
     .st-key-dark_mode::after {
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath d='M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z' fill='%239aa4b2'/%3E%3C/svg%3E");
         margin-left: 6px;
+    }
+    /* Logo plus grand dans la bannière native : size="large" de st.logo()
+       plafonne à 32px, la bannière (60px de haut) a de la marge pour plus. */
+    [data-testid="stHeaderLogo"] {
+        height: 44px !important; width: auto !important;
     }
     /* Mobile (<768px) : le kicker et le texte de scope sont en position fixe
        à des offsets pixel fixes (left:65px / left:300px) calés sur la largeur

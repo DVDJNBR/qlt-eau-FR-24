@@ -187,8 +187,12 @@ def make_gauge_fig(value):
 # "stBaseButton-pills(Active)" — on cible button[data-variant="pills"] et
 # l'état sélectionné via aria-checked.
 _CSS_COMMON = """
-    /* Largeur max */
-    .block-container { max-width: 1400px !important; padding-left: 2rem !important; padding-right: 2rem !important; }
+    /* Largeur max. padding-top réduit : Streamlit réserve 6rem (96px) par
+       défaut pour un gros bloc titre qui n'existe plus dans notre page
+       (kicker/scope vivent dans la bannière native) - il ne restait qu'un
+       grand vide au-dessus des onglets. 4.5rem (72px) laisse juste la place
+       de la bannière native (60px) + une petite marge. */
+    .block-container { max-width: 1400px !important; padding-left: 2rem !important; padding-right: 2rem !important; padding-top: 4.5rem !important; }
     /* Sélecteur de mois : grille 6 colonnes x 2 rangées (une seule bande en
        haut, à côté de la recherche, plutôt qu'une colonne étroite tout en
        hauteur à gauche de la carte). */

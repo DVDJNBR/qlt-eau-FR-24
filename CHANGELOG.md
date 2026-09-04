@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v1.14.0 (2026-09-04)
+
+### Features
+
+- **ui**: Departement/commune cote a cote, mois en 4x3 - gain de verticalite
+  ([`d0a2960`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/d0a2960254641bf09d126e622d1625fc7acdf98e))
+
+- Departement et Commune passent de deux champs empiles (3 rangees avec le bouton Retour) a deux
+  sous-colonnes cote a cote dans la meme largeur totale qu'avant (col_search inchangee), Retour
+  reste en dessous - la colonne recherche passe de 3 a 2 rangees. - Mois : grille 4 colonnes x 3
+  rangees au lieu de 6x2, toujours dans la meme largeur (col_months inchangee) - la rangee du haut
+  (recherche + mois) gagne significativement en hauteur globale, meme si les mois eux-memes passent
+  de 2 a 3 rangees, parce que la recherche redescend nettement plus (3 -> 2 rangees, et chaque
+  rangee recherche est plus haute qu'une rangee de pills).
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.13.1 (2026-09-04)
 
 ### Bug Fixes

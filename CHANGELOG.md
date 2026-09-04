@@ -1,6 +1,31 @@
 # CHANGELOG
 
 
+## v1.12.3 (2026-09-04)
+
+### Bug Fixes
+
+- **ui**: Onglet actif en vrai badge (le CSS precedent etait mort)
+  ([`5420c3d`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/5420c3d27ca81758cf2dea01804b173221193435))
+
+En comparant avec watt-watcher.dvdjnbr.fr (inspiration donnee plus tot dans le projet), l'onglet
+  actif ne ressemblait qu'a un simple trait - alors que du CSS "onglet stylise" existait deja.
+  Investigation : Streamlit a migre ses tabs de BaseWeb vers react-aria a un moment donne, changeant
+  le marquage DOM ([data-baseweb="tab"] -> [role="tab"] / [data-testid="stTab"]). Tout le CSS cible
+  sur data-baseweb="tab" etait donc mort silencieusement - ce qui s'affichait etait uniquement le
+  style par defaut de Streamlit (texte + soulignement bleu de 2px via un <div
+  class="react-aria-SelectionIndicator">), pas notre CSS.
+
+Corrige avec les selecteurs actuels : - [data-testid="stTab"] pour l'onglet, [aria-selected="true"]
+  pour l'etat actif. - L'indicateur natif (simple trait) est masque au profit d'un fond teinte bleu
+  (rgba(59,130,246,0.16)) + liseré du bas 2px, coins hauts arrondis - un vrai badge plutot qu'un
+  trait, dans l'esprit de watt-watcher sans en copier le style exact.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.12.2 (2026-09-04)
 
 ### Bug Fixes

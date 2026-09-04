@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v1.13.0 (2026-09-04)
+
+### Features
+
+- **ui**: Agrandit le logo dans la banniere native
+  ([`2d3d3e5`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/2d3d3e5cc118064af9ac39d00dd7000afe25015d))
+
+st.logo(size="large") plafonne a 32px, alors que la banniere native fait 60px de haut - de la marge
+  disponible pour un logo plus visible. Force via [data-testid="stHeaderLogo"] a 44px (centre
+  verticalement par le layout natif). Le kicker (left:65px -> 74px) est decale en consequence pour
+  garder un espacement propre avec le logo agrandi ; le texte de scope (left:300px) avait deja assez
+  de marge, inchange.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.12.4 (2026-09-04)
 
 ### Bug Fixes

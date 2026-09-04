@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.12.2 (2026-09-04)
+
+### Bug Fixes
+
+- **ui**: Reduit le vide au-dessus des onglets
+  ([`1818c85`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/1818c8561d874b8f8fa3c546c6b75b416d685bad))
+
+Streamlit reserve 6rem (96px) de padding-top par defaut sur le block-container, pense pour un gros
+  bloc titre. Notre page n'en a plus (kicker/scope vivent dans la banniere native) - il ne restait
+  qu'un grand vide entre le haut de la page et les onglets. Reduit a 4.5rem (72px), juste assez pour
+  degager la banniere native (60px) plus une petite marge.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.12.1 (2026-09-04)
 
 ### Bug Fixes

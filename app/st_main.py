@@ -266,16 +266,21 @@ _CSS_COMMON += f"""
         height: 150px; box-sizing: border-box;
         display: flex; flex-direction: column; justify-content: center;
     }}
-    /* Onglets stylés : pilule sur l'onglet actif plutôt que texte nu +
-       simple soulignement. */
-    [data-baseweb="tab-list"] {{ gap: 4px !important; }}
-    [data-baseweb="tab"] {{
-        border-radius: 10px 10px 0 0 !important; padding: 8px 18px !important;
-        font-weight: 600 !important; gap: 6px !important;
+    /* Onglets stylés façon badge (inspiré de watt-watcher.dvdjnbr.fr) :
+       l'onglet actif a un fond teinté dans la couleur d'accent et un liseré
+       du bas en accent - plus qu'un simple soulignement (l'indicateur natif
+       react-aria, un simple trait de 2px, est masqué au profit de ce style).
+       NB : Streamlit a migré ses tabs de BaseWeb vers react-aria - le
+       sélecteur est [data-testid="stTab"], plus [data-baseweb="tab"]. */
+    [data-testid="stTab"] {{
+        border-radius: 8px 8px 0 0 !important; padding: 8px 16px !important;
+        font-weight: 600 !important;
     }}
-    [data-baseweb="tab"]:hover {{ background: {_card_bg} !important; }}
-    [data-baseweb="tab"][aria-selected="true"] {{
-        background: {_card_bg} !important; border-bottom: none !important;
+    [data-testid="stTab"] .react-aria-SelectionIndicator {{ display: none !important; }}
+    [data-testid="stTab"]:hover {{ background: {_card_bg} !important; }}
+    [data-testid="stTab"][aria-selected="true"] {{
+        background: rgba(59, 130, 246, 0.16) !important;
+        border-bottom: 2px solid #3b82f6 !important;
     }}
 """
 

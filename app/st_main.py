@@ -176,7 +176,7 @@ def make_gauge_fig(value):
         ),
     ))
     fig.update_layout(
-        height=100, margin=dict(l=15, r=15, t=5, b=0),
+        height=100, margin=dict(l=15, r=15, t=5, b=12),
         paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color=PLOTLY_FONT_COLOR),
     )
@@ -269,7 +269,7 @@ _CSS_COMMON += f"""
     .st-key-gauge_card {{
         background: {_card_bg}; border: 1px solid {_card_border};
         border-radius: 12px; padding: 10px 15px 0 15px;
-        height: 150px; box-sizing: border-box;
+        height: 160px; box-sizing: border-box;
         display: flex; flex-direction: column; justify-content: center;
     }}
     /* Onglets stylés façon badge (inspiré de watt-watcher.dvdjnbr.fr) :
@@ -344,10 +344,16 @@ if _dark:
         hr {{ border-color: #232a35 !important; }}
         label, p, h1, h2, h3, .stMarkdown, .stCaption {{ color: #e2e8f0 !important; }}
         /* Carte encadrée : bordure/coins arrondis sombres autour de chaque
-           graphique Plotly plutôt qu'un rendu bord-à-bord. */
+           graphique Plotly plutôt qu'un rendu bord-à-bord. Pas de padding ici :
+           Streamlit mesure la largeur de cet élément (bounding box, donc
+           padding inclus) pour dimensionner le graphique Plotly - un padding
+           CSS ici fait rendre Plotly 2*padding trop large, et l'overflow:hidden
+           tronque alors le bord droit (ex. le dernier mois "Déc" coupé). La
+           respiration visuelle vient déjà des marges internes de chaque figure
+           (margin=dict(l=10, r=10, ...)), pas besoin de padding au conteneur. */
         [data-testid="stPlotlyChart"] {{
             background: #151921; border: 1px solid #232a35; border-radius: 12px;
-            padding: 10px; overflow: hidden;
+            overflow: hidden;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -694,7 +700,7 @@ with tab_dashboard:
         with kpi_r1c1:
             st.markdown(f"""
                 <div style="background:{_card_bg};border:1px solid {_card_border};border-radius:12px;
-                            height:150px;box-sizing:border-box;padding:10px 12px;
+                            height:160px;box-sizing:border-box;padding:10px 12px;
                             display:flex;flex-direction:column;justify-content:center;align-items:center;">
                     <span style="font-size:0.75rem;color:{_muted}">Zones</span>
                     <span style="font-size:1.6rem;font-weight:700;color:{PLOTLY_FONT_COLOR}">{nb_zones}</span>
@@ -731,7 +737,7 @@ with tab_dashboard:
             )
             st.markdown(_md_html(f"""
                 <div style="background:{_card_bg};border:1px solid {_card_border};border-radius:12px;
-                            height:150px;box-sizing:border-box;padding:10px 12px;
+                            height:160px;box-sizing:border-box;padding:10px 12px;
                             display:flex;flex-direction:column;justify-content:space-evenly;">
                     {_rows_html}
                 </div>
@@ -754,7 +760,7 @@ with tab_dashboard:
 
             st.markdown(_md_html(f"""
                 <div style="background:{_bact_bg}; border:1px solid {_bact_border}; border-radius:12px;
-                            height:150px; box-sizing:border-box; padding:10px 12px;
+                            height:160px; box-sizing:border-box; padding:10px 12px;
                             display:flex; flex-direction:column; justify-content:center;">
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="font-size:0.75rem; color:{_muted};">Bactério.</span>
@@ -968,11 +974,11 @@ with tab_dashboard:
         fig.update_layout(
             template=PLOTLY_TEMPLATE, height=150,
             title=dict(text=title, font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0, pad=dict(l=0)),
-            yaxis=dict(range=[ymin, ymax], title="%", ticksuffix="%", tickfont=dict(color=PLOTLY_FONT_COLOR)),
-            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            yaxis=dict(range=[ymin, ymax], title="%", ticksuffix="%", tickfont=dict(color=PLOTLY_FONT_COLOR), automargin=True),
+            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR), automargin=True),
             showlegend=df_commune_td is not None,
-            legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
-            margin=dict(l=10, r=10, t=35, b=40 if df_commune_td is not None else 10),
+            legend=dict(orientation="h", y=-0.3, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            margin=dict(l=10, r=10, t=35, b=45 if df_commune_td is not None else 15),
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color=PLOTLY_FONT_COLOR),
         )
@@ -1053,10 +1059,10 @@ with tab_dashboard:
         fig.update_layout(
             template=PLOTLY_TEMPLATE, height=150, barmode="stack", bargap=0.35,
             title=dict(text=title, font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0, pad=dict(l=0)),
-            yaxis=dict(title="Zones", tickfont=dict(color=PLOTLY_FONT_COLOR), rangemode="tozero"),
-            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
-            legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
-            margin=dict(l=10, r=10, t=35, b=10),
+            yaxis=dict(title="Zones", tickfont=dict(color=PLOTLY_FONT_COLOR), rangemode="tozero", automargin=True),
+            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR), automargin=True),
+            legend=dict(orientation="h", y=-0.3, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            margin=dict(l=10, r=10, t=35, b=45),
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color=PLOTLY_FONT_COLOR),
         )
@@ -1110,13 +1116,13 @@ with tab_dashboard:
         fig.update_layout(
             template=PLOTLY_TEMPLATE, height=170,
             title=dict(
-                text=f"Niveaux physico-chimiques — {scope_label} (% de la limite légale)",
+                text=f"Niveaux physico-chimiques — {scope_label}",
                 font=dict(size=13, color=PLOTLY_FONT_COLOR), x=0,
             ),
-            yaxis=dict(title="% limite", ticksuffix="%", rangemode="tozero", tickfont=dict(color=PLOTLY_FONT_COLOR)),
-            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR)),
-            legend=dict(orientation="h", y=-0.25, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
-            margin=dict(l=10, r=10, t=40, b=10),
+            yaxis=dict(title="% limite", ticksuffix="%", rangemode="tozero", tickfont=dict(color=PLOTLY_FONT_COLOR), automargin=True),
+            xaxis=dict(tickfont=dict(size=10, color=PLOTLY_FONT_COLOR), automargin=True),
+            legend=dict(orientation="h", y=-0.35, x=0, font=dict(size=10, color=PLOTLY_FONT_COLOR)),
+            margin=dict(l=10, r=10, t=40, b=55),
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color=PLOTLY_FONT_COLOR),
         )

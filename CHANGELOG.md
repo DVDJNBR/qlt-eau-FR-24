@@ -1,6 +1,29 @@
 # CHANGELOG
 
 
+## v1.12.0 (2026-09-04)
+
+### Features
+
+- **ui**: Logo final - tuyau qui tombe du plafond + goutte + coche, favicon aligne
+  ([`29837a5`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/29837a56d6622f7967141c0a8a5f9e62858c9822))
+
+- Nouveau logo : tuyau vertical epais qui depasse a peine du haut de l'icone (comme suspendu au
+  plafond), rebord discret, se prolongeant en une vraie goutte d'eau (silhouette Material) avec une
+  coche epaisse a l'interieur (couleur du degrade de fond, pas une teinte fixe - elle se fond
+  litteralement dans le fond via le meme gradient en gradientUnits="userSpaceOnUse"). Nombreuses
+  iterations avec l'utilisateur (formes de tuyau, position/taille de goutte et de coche) avant
+  validation finale de cette version. - Favicon aligne sur le nouveau logo :
+  st.set_page_config(page_icon=...) pointe maintenant vers app/assets/logo-icon.svg au lieu de
+  l'icone Material generique ":material/water_drop:". st.image (utilise en interne par page_icon)
+  supporte le SVG directement, confirme en local : le lien <link rel="shortcut icon"> genere bien un
+  data URI SVG du nouveau logo.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.11.0 (2026-09-03)
 
 ### Features

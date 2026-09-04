@@ -1,6 +1,29 @@
 # CHANGELOG
 
 
+## v1.12.4 (2026-09-04)
+
+### Bug Fixes
+
+- **ui**: Boite du selectbox blanche en dark mode (CSS mort, meme cause que les tabs)
+  ([`2242355`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/2242355a6589e66db2e8bd7006ae2a8dcbd3e601))
+
+En verifiant s'il restait d'autres selecteurs [data-baseweb=...] morts apres le fix des onglets
+  (Streamlit a migre BaseWeb -> react-aria), trouve le meme probleme sur les selectbox
+  departement/commune : la boite fermee du champ restait blanche en dark mode, visible et confirme
+  au screenshot (les listes deroulantes ouvertes, elles, restaient correctement themees via
+  stSelectboxVirtualDropdown, un data-testid toujours valide - seule la boite fermee etait
+  affectee).
+
+Remplace [data-baseweb="select/input/base-input/textarea"] par .react-aria-ComboBox (marquage
+  actuel) pour la boite, l'input et l'icone. Les regles [data-baseweb="menu"/"popover"] etaient
+  redondantes avec stSelectboxVirtualDropdown (deja fonctionnel) - supprimees plutot que reecrites.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.12.3 (2026-09-04)
 
 ### Bug Fixes

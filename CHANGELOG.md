@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v1.14.1 (2026-09-04)
+
+### Bug Fixes
+
+- **ui**: Responsiveness - graphiques tronques sur ecran etroit + gauge qui deborde
+  ([`3c1ee3b`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/3c1ee3b2c8fd0648cee6e958467633467e5095fe))
+
+Verifie enfin le rendu a une vraie largeur telephone (390px), via un pipeline CDP direct plutot que
+  l'automatisation navigateur habituelle qui a un plancher ~1050px dans cet environnement. Deux bugs
+  reels trouves et corriges :
+
+- Cause racine des graphiques tronques ("Déc" coupe sur les 3 graphiques du bas, titre
+  physico-chimique deborde) : notre CSS ajoutait padding:10px directement sur
+  [data-testid="stPlotlyChart"], l'element meme dont Streamlit mesure la largeur (bounding box, donc
+  padding inclus) pour dimensionner Plotly. Plotly se rendait donc 2*padding trop large, et
+  l'overflow:hidden du meme conteneur tronquait le debordement au lieu de l'afficher - invisible en
+  desktop ou peu de mois etaient proches du bord, flagrant en dessous d'environ 400px de large.
+  Corrige en retirant ce padding : la respiration visuelle vient deja des marges internes de chaque
+  figure (margin=dict(l=10, r=10, ...)), pas besoin de padding au conteneur. En bonus, la carte
+  nationale (DOM-TOM + France) profite aussi de la meme correction puisqu'elle utilise le meme
+  conteneur. - automargin=True ajoute aux axes des 3 graphiques du bas (defense supplementaire
+  contre le rognage de ticks), legendes repositionnees un peu plus bas (marge inferieure augmentee
+  en consequence) pour ne plus chevaucher les libelles de l'axe X une fois repliees sur plusieurs
+  lignes en largeur reduite. Titre du graphique physico- chimique raccourci (le "(% de la limite
+  légale)" redondant avec le titre de l'axe Y "% limite" est retire). - Carte KPI "Conformité"
+  (manometre) : le pourcentage debordait du bas de sa carte a cause d'une marge basse nulle dans la
+  figure Plotly (b=0). Marge basse portee a 12px, et les 4 cartes KPI de la meme rangee (Zones,
+  manometre, Conforme/Vigilance/Alerte, Bactério) passent de 150px a 160px de haut pour garder leur
+  alignement mutuel.
+
+Note : le rendu de la carte nationale (DOM-TOM empiles + France) reste imparfait sur tres petit
+  ecran (aspect ratio ecrase par la hauteur fixe de la figure) au-dela du gain deja obtenu par le
+  fix ci-dessus - limitation connue, pas traitee dans ce commit.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_013tnc3w5m39NbSKEovusRGM
+
+
 ## v1.14.0 (2026-09-04)
 
 ### Features

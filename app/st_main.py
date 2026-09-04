@@ -245,6 +245,12 @@ _CSS_COMMON = """
             flex: 0 0 calc(33.333% - 6px) !important;
         }
     }
+    /* Petit telephone (<480px) : les 2rem de marge fixe de chaque cote
+       (32px x2) pesent proportionnellement plus sur une largeur d'ecran
+       reduite - on les reduit pour rendre cette largeur au contenu. */
+    @media (max-width: 480px) {
+        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
+    }
 """
 # Carte KPI "Conformité" (manomètre) : même habillage que les cartes colorées
 # (fond/bordure/coins arrondis) pour que les 5 blocs de la ligne KPI soient

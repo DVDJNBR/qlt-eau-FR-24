@@ -4,6 +4,7 @@ Carte pleine largeur avec insets DOM-TOM (Option B) + drill-down départements
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
 import json
@@ -25,6 +26,37 @@ st.set_page_config(page_title="Qualité de l'eau en France 2024", layout="wide",
 # st.logo() n'accepte qu'une image statique, pas de HTML dynamique : le titre
 # qui change selon le département sélectionné reste dans le corps de page.
 st.logo(str(APP_ASSETS_DIR / "logo-icon.svg"), size="large")
+
+# Après un déploiement, les fichiers JS chunkés (Selectbox, ButtonGroup, ...) servis par
+# l'onglet déjà ouvert n'existent plus sur le serveur (nouveaux hash) : le prochain clic
+# sur un widget lève "Failed to fetch dynamically imported module". Un rechargement complet
+# de la page recharge l'index à jour et résout l'erreur ; on ne le fait qu'une fois par
+# chargement pour éviter une boucle si l'erreur est en fait persistante.
+components.html(
+    """
+    <script>
+    (function() {
+        var top = window.top;
+        if (top.__qltEauChunkReloadArmed) return;
+        top.__qltEauChunkReloadArmed = true;
+        function isChunkError(msg) {
+            return typeof msg === "string" && msg.indexOf("Failed to fetch dynamically imported module") !== -1;
+        }
+        function handle(msg) {
+            if (isChunkError(msg) && !top.__qltEauChunkReloading) {
+                top.__qltEauChunkReloading = true;
+                top.location.reload();
+            }
+        }
+        top.addEventListener("error", function(e) { handle(e.message); });
+        top.addEventListener("unhandledrejection", function(e) {
+            handle(e.reason && e.reason.message);
+        });
+    })();
+    </script>
+    """,
+    height=0,
+)
 
 # Le CSS dark/light est injecté plus bas après initialisation du session state
 
@@ -416,15 +448,17 @@ st.toggle("Mode sombre", key="dark_mode", label_visibility="collapsed")
 # PANNEAU INFOS : À propos / Circulation de la donnée / Architecture
 # ============================================================
 
+# Badges shields.io "for-the-badge", même convention que sur le portfolio
+# (github.com/ileriayo/markdown-badges) — pas de tag Hub'Eau ici, ce n'est
+# pas une techno du stack mais la source de données (déjà nommée dans le texte).
 TECH_BADGES = [
-    ("Azure",      "#0078D4"),
-    ("Databricks", "#FF3621"),
-    ("Terraform",  "#7B42BC"),
-    ("Delta Lake", "#00A1F1"),
-    ("Python 3.13", "#3776AB"),
-    ("FastAPI",    "#009688"),
-    ("Streamlit",  "#FF4B4B"),
-    ("Hub'Eau API", "#3B82F6"),
+    "https://img.shields.io/badge/python-%233670A0.svg?style=for-the-badge&logo=python&logoColor=ffdd54",
+    "https://img.shields.io/badge/Databricks-%23FF3621.svg?style=for-the-badge&logo=databricks&logoColor=white",
+    "https://img.shields.io/badge/azure-%230078D4.svg?style=for-the-badge&logo=microsoftazure&logoColor=white",
+    "https://img.shields.io/badge/Delta%20Lake-00ADD8.svg?style=for-the-badge",
+    "https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white",
+    "https://img.shields.io/badge/fastapi-%23009688.svg?style=for-the-badge&logo=fastapi&logoColor=white",
+    "https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white",
 ]
 
 tab_about, tab_flow, tab_infra, tab_dashboard = st.tabs(
@@ -447,8 +481,8 @@ with tab_about:
             les transforme selon une architecture Medallion <b>Bronze → Silver → Gold</b>,
             et les expose via une API REST FastAPI sans compute Databricks.
         </p>
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
-            {"".join(f'<span style="background:{color}22; color:{color}; border:1px solid {color}55; padding:5px 12px; border-radius:999px; font-size:0.8rem; font-weight:600;">{name}</span>' for name, color in TECH_BADGES)}
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;">
+            {"".join(f'<img src="{url}" alt="" height="28" style="border-radius:4px;">' for url in TECH_BADGES)}
         </div>
         <p style="margin-top:16px;">
             <a href="https://github.com/DVDJNBR/qlt-eau-FR-24" target="_blank" style="color:#60A5FA; font-size:0.9rem;">→ Code source sur GitHub</a>
@@ -456,35 +490,185 @@ with tab_about:
     """), unsafe_allow_html=True)
 
 with tab_flow:
-    PIPELINE_STEPS = [
-        ("Hub'Eau API", "Source", "#3B82F6"),
-        ("01 · Ingestion", "Bronze", "#cd7f32"),
-        ("02 · Transformation", "Silver", "#c0c0c0"),
-        ("03 · Agrégations", "Gold", "#ffd700"),
-        ("04 · Quality Checks", "Contrôles", "#4caf50"),
-        ("API REST", "Exposition", "#3B82F6"),
-    ]
-    _steps_html = ""
-    for i, (title, subtitle, color) in enumerate(PIPELINE_STEPS):
-        _steps_html += f"""
-            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:110px;">
-                <div style="width:100%; padding:14px 10px; border-radius:12px; background:{color}22; border:2px solid {color}; text-align:center;">
-                    <div style="font-weight:700; font-size:0.85rem; color:{PLOTLY_FONT_COLOR};">{title}</div>
-                    <div style="font-size:0.72rem; color:{_muted}; margin-top:2px;">{subtitle}</div>
-                </div>
-            </div>
-        """
-        if i < len(PIPELINE_STEPS) - 1:
-            _steps_html += f'<div style="font-size:1.4rem; color:{_muted}; padding:0 4px;">→</div>'
+    # Chemin de la donnée "en live" : icônes + exemple représentatif de ce que
+    # contient chaque étage (JSON brut, ligne de table, résultat de contrôle,
+    # route API), avec un point lumineux qui parcourt les connecteurs en boucle
+    # continue (CSS pur — pas de JS/composant custom). Inspiré de la page
+    # Pipeline de watt_watcher (PipelineDiagram + section Architecture cloud).
+    FLOW_ICONS = {
+        "source":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>',
+        "bronze":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16M4 8v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8M4 8l2-4h12l2 4"/></svg>',
+        "silver":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h6M4 10h4M4 14h6M4 18h4"/><path d="M13 6h7v12h-7z"/></svg>',
+        "gold":      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6"/><path d="M5 12v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/></svg>',
+        "checks":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>',
+        "api":       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4 3 12l5 8M16 4l5 8-5 8"/></svg>',
+        "dashboard": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="5" y2="11"/><line x1="12" y1="19" x2="12" y2="5"/><line x1="19" y1="19" x2="19" y2="14"/></svg>',
+    }
 
-    st.markdown(_md_html(f"""
-        <div style="display:flex; align-items:center; overflow-x:auto; padding:16px 4px; gap:2px;">
-            {_steps_html}
+    _preview_source = """<div class="flow-path">GET /api/v1/qualite_eau_potable/resultats_dis</div>
+<pre class="flow-json">{
+  "code_commune": "59350",
+  "nom_commune": "Lille",
+  "date_prelevement": "2024-06-12",
+  "libelle_parametre": "Escherichia coli",
+  "resultat_numerique": 0,
+  "conclusion_conformite_prelevement": "C"
+}</pre>"""
+
+    _preview_bronze = """<div class="flow-path">bronze/water_quality/hubeau &middot; partition&eacute; par ann&eacute;e</div>
+<pre class="flow-json">{
+  "code_commune": "59350",
+  "nom_commune": "Lille",
+  ...
+}</pre>
+<div class="flow-note">&Eacute;crit tel quel, aucune transformation.</div>"""
+
+    _preview_silver = """<div class="flow-path">Table : silver_conformite</div>
+<div class="flow-kv"><span>id</span><b>SMP-48213</b></div>
+<div class="flow-kv"><span>dept</span><b>59</b></div>
+<div class="flow-kv"><span>param</span><b>1301</b></div>
+<div class="flow-kv"><span>concl.</span><b>C</b></div>"""
+
+    _preview_gold = """<div class="flow-path">Table : agg_conformite_departement</div>
+<div class="flow-kv"><span>dept</span><b>59</b></div>
+<div class="flow-kv"><span>tests</span><b>1&nbsp;842</b></div>
+<div class="flow-kv"><span>conformes</span><b>1&nbsp;503</b></div>
+<div class="flow-kv"><span>taux</span><b>81.6%</b></div>"""
+
+    _preview_checks = """<div class="flow-check">&#10003; dim_communes : commune_code unique (34 968 lignes)</div>
+<div class="flow-check">&#10003; factconformite : is_compliant_pc bool&eacute;en</div>"""
+
+    _preview_api = """<div class="flow-route"><span class="flow-method">GET</span> /conformite/departements/{code}</div>"""
+
+    _preview_dashboard = """<div class="flow-here">&#9679; Vous &ecirc;tes ici</div>"""
+
+    FLOW_STAGES = [
+        ("source",    "Hub'Eau API",     "Source",            "#3B82F6", _preview_source),
+        ("bronze",    "Bronze",          "Ingestion brute",   "#cd7f32", _preview_bronze),
+        ("silver",    "Silver",          "Nettoyage",         "#c0c0c0", _preview_silver),
+        ("gold",      "Gold",            "Agrégations",  "#ffd700", _preview_gold),
+        ("checks",    "Quality Checks",  "Contrôles Spark", "#4caf50", _preview_checks),
+        ("api",       "API REST",        "Exposition",        "#3B82F6", _preview_api),
+        ("dashboard", "Dashboard",       "Ce que vous voyez",  "#a855f7", _preview_dashboard),
+    ]
+
+    _N = len(FLOW_STAGES)
+    _T = round((_N - 1) * 1.1, 2)          # durée totale d'un cycle (s)
+    _step = _T / (_N - 1)
+
+    _cols_html, _conn_html = [], []
+    for i, (kind, title, subtitle, color, preview) in enumerate(FLOW_STAGES):
+        _delay = -round(i * _step, 2)
+        _cols_html.append(f"""
+            <div class="flow-col">
+                <div class="flow-node" style="--flow-color:{color}; animation-delay:{_delay}s;">
+                    <span class="flow-node-icon">{FLOW_ICONS[kind]}</span>
+                    <div class="flow-node-title">{title}</div>
+                    <div class="flow-node-sub">{subtitle}</div>
+                </div>
+                <div class="flow-preview" style="--flow-color:{color};">{preview}</div>
+            </div>
+        """)
+    for i in range(_N - 1):
+        _delay = -round(i * _step, 2)
+        _conn_html.append(f"""
+            <div class="flow-connector">
+                <span class="flow-connector-line"></span>
+                <span class="flow-connector-spark" style="--flow-color:{FLOW_STAGES[i][3]}; animation-delay:{_delay}s;"></span>
+            </div>
+        """)
+
+    _flow_row = _cols_html[0] + _conn_html[0] + f"""
+        <div class="flow-datalake">
+            <span class="flow-datalake-label">Data lake &middot; ADLS Gen2</span>
+            <div class="flow-datalake-row">
+                {_cols_html[1]}
+                {_conn_html[1]}
+                {_cols_html[2]}
+            </div>
         </div>
-        <p style="color:{_muted}; font-size:0.85rem; margin-top:8px;">
+    """
+    for i in range(3, _N):
+        _flow_row += _conn_html[i - 1] + _cols_html[i]
+
+    _flow_css = """
+    <style>
+        .flow-wrap { overflow-x:auto; padding:8px 4px 16px; }
+        .flow-row  { display:flex; align-items:flex-start; gap:0; min-width:max-content; }
+        .flow-col  { display:flex; flex-direction:column; align-items:center; gap:8px; width:132px; flex:0 0 auto; }
+        .flow-node { width:100%; box-sizing:border-box; padding:12px 8px; border-radius:12px;
+                      background:color-mix(in srgb, var(--flow-color) 14%, transparent);
+                      border:1.5px solid var(--flow-color); text-align:center;
+                      animation: flowPulse __T__s ease-in-out infinite; }
+        .flow-node-icon { display:inline-flex; width:20px; height:20px; color:var(--flow-color); }
+        .flow-node-title { font-weight:700; font-size:0.8rem; color:FONTCOLOR; margin-top:4px; }
+        .flow-node-sub   { font-size:0.68rem; color:MUTEDCOLOR; margin-top:1px; }
+        .flow-preview { width:100%; box-sizing:border-box; min-height:96px; padding:8px;
+                         border-radius:8px; background:CARDBG; border:1px solid CARDBORDER;
+                         font-size:0.62rem; color:MUTEDCOLOR; overflow:hidden; }
+        .flow-path  { font-size:0.6rem; color:var(--flow-color); margin-bottom:4px; word-break:break-all; }
+        .flow-json  { margin:0; font-size:0.6rem; line-height:1.4; white-space:pre-wrap; word-break:break-word; color:MUTEDCOLOR; }
+        .flow-note  { margin-top:4px; font-style:italic; opacity:0.8; }
+        .flow-kv { display:flex; justify-content:space-between; gap:6px; padding:1.5px 0; border-bottom:1px solid CARDBORDER; }
+        .flow-kv:last-child { border-bottom:none; }
+        .flow-kv span { color:MUTEDCOLOR; min-width:0; overflow-wrap:break-word; }
+        .flow-kv b { color:FONTCOLOR; font-weight:600; white-space:nowrap; flex:0 0 auto; }
+        .flow-check { color:#4caf50; margin-bottom:3px; }
+        .flow-route { font-size:0.68rem; }
+        .flow-method { background:#3B82F622; color:#3B82F6; border:1px solid #3B82F655; border-radius:5px; padding:1px 5px; font-weight:700; font-size:0.6rem; margin-right:5px; }
+        .flow-here  { color:#a855f7; font-weight:700; font-size:0.7rem; }
+        .flow-datalake { border:1.5px dashed color-mix(in srgb, MUTEDCOLOR 45%, transparent); border-radius:14px;
+                          padding:20px 10px 10px; position:relative; margin:0 2px; }
+        .flow-datalake-label { position:absolute; top:-9px; left:12px; background:BODYBG; padding:0 6px;
+                                font-size:0.62rem; color:MUTEDCOLOR; font-weight:600; }
+        .flow-datalake-row { display:flex; align-items:flex-start; }
+        .flow-connector { position:relative; width:34px; height:20px; margin-top:22px; flex:0 0 auto; }
+        .flow-connector-line { position:absolute; top:50%; left:0; right:0; height:2px; background:CARDBORDER; transform:translateY(-50%); }
+        .flow-connector-spark { position:absolute; top:50%; left:0; width:7px; height:7px; border-radius:50%;
+                                 background:var(--flow-color); box-shadow:0 0 8px var(--flow-color);
+                                 transform:translate(-50%,-50%); opacity:0;
+                                 animation: flowTravel __T__s linear infinite; }
+
+        @keyframes flowPulse {
+            0%   { box-shadow:none; }
+            2%   { box-shadow:0 0 14px var(--flow-color); }
+            SLICEm2 { box-shadow:0 0 14px var(--flow-color); }
+            SLICEpct { box-shadow:none; }
+            100% { box-shadow:none; }
+        }
+        @keyframes flowTravel {
+            0%      { left:0%; opacity:0; }
+            3%      { opacity:1; }
+            SLICEm3 { left:100%; opacity:1; }
+            SLICEpct, 100% { left:100%; opacity:0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .flow-node, .flow-connector-spark { animation:none !important; }
+        }
+    </style>
+    """
+    _slice = 100 / (_N - 1)
+    _flow_css = (_flow_css
+        .replace("__T__", str(_T))
+        .replace("SLICEm2", f"{max(0.1, _slice - 2):.2f}%")
+        .replace("SLICEm3", f"{max(0.1, _slice - 3):.2f}%")
+        .replace("SLICEpct", f"{_slice:.2f}%")
+        .replace("FONTCOLOR", PLOTLY_FONT_COLOR)
+        .replace("MUTEDCOLOR", _muted)
+        .replace("CARDBG", _card_bg)
+        .replace("CARDBORDER", _card_border)
+        .replace("BODYBG", "#0e1117" if _dark else "#ffffff")
+    )
+
+    st.markdown(_flow_css, unsafe_allow_html=True)
+    st.markdown(_md_html(f"""
+        <div class="flow-wrap"><div class="flow-row">{_flow_row}</div></div>
+        <p style="color:{_muted}; font-size:0.85rem; margin-top:4px;">
             Ingestion incrémentale depuis Hub'Eau → nettoyage/standardisation Silver →
             star schema + KPIs Gold → contrôles qualité Spark natif → exposition REST
             directe depuis ADLS (sans compute Databricks au moment de la lecture).
+            Le point lumineux illustre le sens de circulation, en continu — chaque
+            vignette montre un exemple réel de ce que contient l'étage correspondant.
         </p>
     """), unsafe_allow_html=True)
 

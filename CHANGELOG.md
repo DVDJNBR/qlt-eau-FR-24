@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v1.15.0 (2026-09-07)
+
+### Features
+
+- **ui**: Chemin de donnée animé et tags shields.io
+  ([`9c898de`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/9c898de64a112439072cb061cf80a30a94fe70b7))
+
+- Circulation de la donnée : diagramme animé façon watt_watcher (icônes, aperçu réel par étage —
+  JSON Hub'Eau, lignes silver/gold, contrôles qualité, route API —, point lumineux en boucle CSS
+  pure) - À propos : badges shields.io for-the-badge à la place des pills colorées, retrait du tag
+  Hub'Eau (source de donnée, pas une techno du stack) - Auto-reload si un chunk JS Streamlit
+  obsolète échoue à charger après un déploiement (onglet resté ouvert pendant le rebuild du
+  conteneur)
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_01AXyMPmUcC51rPJxMYAsn7B
+
+
 ## v1.14.1 (2026-09-04)
 
 ### Bug Fixes

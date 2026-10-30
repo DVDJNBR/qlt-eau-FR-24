@@ -1,6 +1,37 @@
 # CHANGELOG
 
 
+## v1.15.1 (2026-10-30)
+
+### Chores
+
+- **docker**: Turn off Streamlit's usage telemetry
+  ([`cc52571`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/cc525715e51dba1b83e4ecb97f5aa38d48ee2a5f))
+
+Every page view posted the visitor's URL, user agent and locale to webhooks.fivetran.com
+  (browser.gatherUsageStats, on by default). Set on the command line: app/.streamlit/config.toml
+  isn't read from the /app cwd.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Performance Improvements
+
+- **app**: Simplify department outlines and fix the telemetry opt-out
+  ([`b7b9bf9`](https://github.com/DVDJNBR/qlt-eau-FR-24/commit/b7b9bf94a3cfe3bc2abfc6fe9aef7df9d8a20443))
+
+Every rerun (each click on a month or a department) re-serialized the 3.4 MB departements.geojson
+  into the map figure and sent it to the browser: 2.2 s per interaction. Outlines are now simplified
+  once at load with Douglas-Peucker (~500 m for mainland France, ~100 m for the zoomed DOM-TOM
+  insets): 3.4 MB -> 0.4 MB, 0.6 s per interaction, map visually unchanged. Commune outlines are
+  left as they are: only one department's communes are ever drawn.
+
+The previous commit turned telemetry off in the root Dockerfile, which docker-compose doesn't build
+  (it builds app/). Reverted, and set browser.gatherUsageStats = false in
+  app/.streamlit/config.toml, which app/Dockerfile copies into the container's working directory.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+
 ## v1.15.0 (2026-09-07)
 
 ### Features

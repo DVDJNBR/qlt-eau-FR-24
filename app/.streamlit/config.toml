@@ -7,3 +7,8 @@ primaryColor = "#3b82f6"
 backgroundColor = "#f8fafc"
 secondaryBackgroundColor = "#ffffff"
 textColor = "#1a202c"
+
+[browser]
+# Streamlit envoie par défaut chaque vue de page à sa télémétrie
+# (webhooks.fivetran.com) : URL, navigateur et langue du visiteur. Coupé.
+gatherUsageStats = false

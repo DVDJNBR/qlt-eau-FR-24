@@ -18,7 +18,4 @@ COPY . .
 EXPOSE 8501
 
 # Run the Streamlit application
-# Streamlit envoie par défaut chaque vue de page à sa télémétrie
-# (webhooks.fivetran.com) : URL, navigateur et langue du visiteur. Coupé en
-# ligne de commande, car app/.streamlit/config.toml n'est pas lu depuis /app.
-CMD ["streamlit", "run", "app/st_main.py", "--server.port=8501", "--server.address=0.0.0.0", "--browser.gatherUsageStats=false"]
+CMD ["streamlit", "run", "app/st_main.py", "--server.port=8501", "--server.address=0.0.0.0"]

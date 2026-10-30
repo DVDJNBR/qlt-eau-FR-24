@@ -5,6 +5,7 @@ Carte pleine largeur avec insets DOM-TOM (Option B) + drill-down départements
 
 import streamlit as st
 import streamlit.components.v1 as components
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import json
@@ -112,6 +113,50 @@ DOM_TOM_CONFIG = [
 ]
 DOMTOM_CODES = {c[0] for c in DOM_TOM_CONFIG}
 
+# --- Simplification des contours ---
+# departements.geojson pèse 3,4 Mo : tracé à l'échelle de la France, ses
+# points distants de quelques mètres sont invisibles, mais Plotly les
+# sérialise et Streamlit les renvoie au navigateur à chaque rerun (chaque
+# clic). Douglas-Peucker, une fois au chargement : 3,4 Mo -> 0,4 Mo.
+def _rdp(pts, tol):
+    keep = np.zeros(len(pts), dtype=bool)
+    keep[0] = keep[-1] = True
+    stack = [(0, len(pts) - 1)]
+    while stack:
+        a, b = stack.pop()
+        if b <= a + 1:
+            continue
+        seg = pts[b] - pts[a]
+        rel = pts[a + 1:b] - pts[a]
+        norm = np.hypot(*seg)
+        d = (np.abs(seg[0] * rel[:, 1] - seg[1] * rel[:, 0]) / norm if norm
+             else np.hypot(rel[:, 0], rel[:, 1]))
+        i = int(np.argmax(d))
+        if d[i] > tol:
+            m = a + 1 + i
+            keep[m] = True
+            stack += [(a, m), (m, b)]
+    return pts[keep]
+
+
+def _simplify_geojson(gj, tol):
+    """Simplifie les contours en place (tolérance en degrés)."""
+    def ring(r):
+        if len(r) < 8:
+            return r
+        out = _rdp(np.asarray(r, dtype=float), tol)
+        return np.round(out, 4).tolist() if len(out) >= 4 else r
+    for f in gj["features"]:
+        g = f.get("geometry")
+        if not g:
+            continue
+        if g["type"] == "Polygon":
+            g["coordinates"] = [ring(r) for r in g["coordinates"]]
+        elif g["type"] == "MultiPolygon":
+            g["coordinates"] = [[ring(r) for r in poly] for poly in g["coordinates"]]
+    return gj
+
+
 # --- Chargement des données ---
 # cache_resource (et non cache_data) : cache_data re-sérialise/copie la valeur à
 # chaque accès — prohibitif avec un GeoJSON communes de ~45 Mo. Les objets
@@ -127,6 +172,11 @@ def load_data():
         geojson_commune_all = json.load(f)
     with open(DATA_DIR / "departements_domtom.geojson", encoding="utf-8") as f:
         geojson_domtom = json.load(f)
+    # ~500 m pour la métropole (vue France entière), ~100 m pour les DOM-TOM
+    # affichés en médaillons zoomés. Les communes ne sont jamais tracées
+    # toutes ensemble : laissées intactes.
+    _simplify_geojson(geojson_dept, 0.005)
+    _simplify_geojson(geojson_domtom, 0.001)
 
     dept_names    = {f["properties"]["code"]: f["properties"]["nom"] for f in geojson_dept["features"]}
     domtom_names  = {f["properties"]["code"]: f["properties"]["nom"] for f in geojson_domtom["features"]}
